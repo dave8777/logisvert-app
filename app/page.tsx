@@ -7,7 +7,7 @@ import {
   type EquipmentType,
   type GreeOption,
   type ProductLine,
-} from "@/lib/gree-options";
+} from "../lib/gree-options";
 
 type LookupState =
   | { status: "idle" }
