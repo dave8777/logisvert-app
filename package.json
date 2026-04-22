@@ -2,14 +2,17 @@
   "name": "logisvert-app",
   "private": true,
   "scripts": {
+    "dev": "next dev",
     "build": "next build",
     "start": "next start -p $PORT"
   },
   "dependencies": {
     "lucide-react": "^0.511.0",
-    "next": "latest",
-    "playwright": "^1.40.0",
-    "react": "latest",
-    "react-dom": "latest"
+    "next": "14.2.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
   }
 }
