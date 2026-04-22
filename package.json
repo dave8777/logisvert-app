@@ -1,0 +1,15 @@
+{
+  "name": "logisvert-app",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "start": "next start -p $PORT"
+  },
+  "dependencies": {
+    "lucide-react": "^0.511.0",
+    "next": "latest",
+    "playwright": "^1.40.0",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}
