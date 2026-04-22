@@ -24,34 +24,29 @@ type LookupFailure = {
 const LOGISVERT_URL =
   "https://www.hydroquebec.com/residentiel/mieux-consommer/aides-financieres/logisvert/recherche-themopompes-efficaces.html";
 
-function normalizeMoneyToNumber(text: string): number | null {
-  const match = text.match(/(\d{1,3}(?:[ \u00A0]\d{3})*(?:,\d{2})?)\s*\$/);
-  if (!match) return null;
-
-  const normalized = match[1]
-    .replace(/\u00A0/g, " ")
-    .replace(/\s/g, "")
-    .replace(",", ".");
-
-  const value = Number(normalized);
-  return Number.isFinite(value) ? value : null;
-}
-
-function extractLikelyAmount(rawText: string): { amount: number | null; amountLabel: string | null } {
-  const moneyMatches = [...rawText.matchAll(/(\d{1,3}(?:[ \u00A0]\d{3})*(?:,\d{2})?)\s*\$/g)];
+function extractLikelyAmount(
+  rawText: string
+): { amount: number | null; amountLabel: string | null } {
+  const regex = /(\d{1,3}(?:[ \u00A0]\d{3})*(?:,\d{2})?)\s*\$/g;
+  const moneyMatches = Array.from(rawText.matchAll(regex));
 
   if (moneyMatches.length === 0) {
     return { amount: null, amountLabel: null };
   }
 
-  // Usually after an AHRI search there is one main assistance amount on the page.
-  // We take the highest visible amount in the result zone to avoid grabbing tiny unrelated values.
   const parsed = moneyMatches
-    .map((m) => ({
-      label: `${m[1]} $`,
-      value: Number(m[1].replace(/\u00A0/g, " ").replace(/\s/g, "").replace(",", ".")),
-    }))
-    .filter((x) => Number.isFinite(x.value))
+    .map((match) => {
+      const label = `${match[1]} $`;
+      const value = Number(
+        match[1]
+          .replace(/\u00A0/g, " ")
+          .replace(/\s/g, "")
+          .replace(",", ".")
+      );
+
+      return { label, value };
+    })
+    .filter((item) => Number.isFinite(item.value))
     .sort((a, b) => b.value - a.value);
 
   if (parsed.length === 0) {
@@ -64,18 +59,19 @@ function extractLikelyAmount(rawText: string): { amount: number | null; amountLa
   };
 }
 
-async function tryDismissCookieBanner(page: any) {
-  const candidates = [
+async function tryDismissCookieBanner(page: any): Promise<void> {
+  const selectors = [
     page.getByRole("button", { name: /accepter/i }),
     page.getByRole("button", { name: /tout accepter/i }),
     page.getByRole("button", { name: /j'accepte/i }),
     page.getByRole("button", { name: /allow all/i }),
   ];
 
-  for (const locator of candidates) {
+  for (const locator of selectors) {
     try {
-      if (await locator.first().isVisible({ timeout: 1200 })) {
-        await locator.first().click({ timeout: 1200 });
+      const button = locator.first();
+      if (await button.isVisible({ timeout: 1200 })) {
+        await button.click({ timeout: 1200 });
         return;
       }
     } catch {
@@ -84,70 +80,93 @@ async function tryDismissCookieBanner(page: any) {
   }
 }
 
-async function setInstallationCriteria(page: any, installationDate: string) {
-  // Best-effort selectors because Hydro may change markup.
-  // We explicitly set:
-  // - installation date
-  // - "Propriétaire Habitation existante"
-  // Then click "Afficher la liste"
-  const dateInputs = page.locator('input[type="date"], input[placeholder*="date"], input[name*="date"], input[id*="date"]');
-  const count = await dateInputs.count();
-
-  if (count > 0) {
-    await dateInputs.first().fill(installationDate);
-  }
-
-  const ownerExistingText = page.getByText(/Propriétaire\s+Habitation existante/i).first();
+async function setInstallationCriteria(
+  page: any,
+  installationDate: string
+): Promise<void> {
   try {
-    await ownerExistingText.click({ timeout: 2500 });
+    const dateInputs = page.locator(
+      'input[type="date"], input[placeholder*="date"], input[name*="date"], input[id*="date"]'
+    );
+    const count = await dateInputs.count();
+
+    if (count > 0) {
+      await dateInputs.first().fill(installationDate);
+    }
   } catch {
-    // Sometimes already selected or rendered differently.
+    // ignore if date field is not found
   }
 
-  const showListButton = page.getByRole("button", { name: /Afficher la liste/i }).first();
+  try {
+    const existingOwnerText = page
+      .getByText(/Propriétaire\s+Habitation existante/i)
+      .first();
+    await existingOwnerText.click({ timeout: 2500 });
+  } catch {
+    // ignore if already selected or not needed
+  }
+
+  const showListButton = page
+    .getByRole("button", { name: /Afficher la liste/i })
+    .first();
+
   await showListButton.click({ timeout: 5000 });
 }
 
-async function searchByAhri(page: any, ahri: string) {
-  // Switch to AHRI mode if needed.
+async function searchByAhri(page: any, ahri: string): Promise<void> {
   try {
-    await page.getByText(/Numéro AHRI du modèle/i).first().click({ timeout: 3000 });
+    await page
+      .getByText(/Numéro AHRI du modèle/i)
+      .first()
+      .click({ timeout: 3000 });
   } catch {
     // ignore if already visible
   }
 
-  const inputs = page.locator('input[type="text"], input[type="search"], input[inputmode="numeric"]');
+  const inputs = page.locator(
+    'input[type="text"], input[type="search"], input[inputmode="numeric"]'
+  );
   const inputCount = await inputs.count();
 
   if (inputCount === 0) {
-    throw new Error("Impossible de trouver le champ de recherche AHRI sur la page LogisVert.");
+    throw new Error(
+      "Impossible de trouver le champ de recherche AHRI sur la page LogisVert."
+    );
   }
 
   let filled = false;
-  for (let i = 0; i < inputCount; i++) {
+
+  for (let i = 0; i < inputCount; i += 1) {
     const input = inputs.nth(i);
+
     try {
       await input.fill(ahri, { timeout: 1500 });
       const value = await input.inputValue();
+
       if (value === ahri) {
         filled = true;
         break;
       }
     } catch {
-      // continue
+      // try next field
     }
   }
 
   if (!filled) {
-    throw new Error("Impossible de remplir le champ AHRI sur la page LogisVert.");
+    throw new Error(
+      "Impossible de remplir le champ AHRI sur la page LogisVert."
+    );
   }
 
-  const searchButton = page.getByRole("button", { name: /Rechercher ce numéro/i }).first();
+  const searchButton = page
+    .getByRole("button", { name: /Rechercher ce numéro/i })
+    .first();
+
   await searchButton.click({ timeout: 5000 });
 }
 
 export async function GET(req: NextRequest) {
-  const ahri = req.nextUrl.searchParams.get("ahri")?.trim();
+  const ahri = req.nextUrl.searchParams.get("ahri")?.trim() || "";
   const installationDate =
     req.nextUrl.searchParams.get("installationDate")?.trim() ||
     new Date().toISOString().slice(0, 10);
@@ -164,7 +183,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  let browser: any;
+  let browser: any = null;
 
   try {
     browser = await chromium.launch({
@@ -192,7 +211,12 @@ export async function GET(req: NextRequest) {
     await setInstallationCriteria(page, installationDate);
     await searchByAhri(page, ahri);
 
-    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+    try {
+      await page.waitForLoadState("networkidle", { timeout: 15000 });
+    } catch {
+      // continue
+    }
+
     await page.waitForTimeout(1500);
 
     const bodyText = await page.locator("body").innerText();
@@ -209,16 +233,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { amount, amountLabel } = extractLikelyAmount(bodyText);
+    const extracted = extractLikelyAmount(bodyText);
 
-    if (amount == null || !amountLabel) {
+    if (extracted.amount == null || extracted.amountLabel == null) {
       return NextResponse.json<LookupFailure>(
         {
           ok: false,
           ahri,
           installationDate,
           error:
-            "La page LogisVert a répondu, mais le montant d'aide financière n'a pas pu être extrait. Aucun montant PDF n'a été utilisé.",
+            "La page LogisVert a répondu, mais le montant d'aide financière n'a pas pu être extrait.",
         },
         { status: 502 }
       );
@@ -228,13 +252,15 @@ export async function GET(req: NextRequest) {
       ok: true,
       ahri,
       installationDate,
-      amount,
-      amountLabel,
+      amount: extracted.amount,
+      amountLabel: extracted.amountLabel,
       rawText: bodyText.slice(0, 4000),
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Erreur inconnue durant la recherche LogisVert.";
+      error instanceof Error
+        ? error.message
+        : "Erreur inconnue durant la recherche LogisVert.";
 
     return NextResponse.json<LookupFailure>(
       {
@@ -247,7 +273,11 @@ export async function GET(req: NextRequest) {
     );
   } finally {
     if (browser) {
-      await browser.close().catch(() => {});
+      try {
+        await browser.close();
+      } catch {
+        // ignore
+      }
     }
   }
 }
