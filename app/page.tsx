@@ -1,518 +1,880 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-type UnitOption = {
-  label: string;
-  btu: string;
-  category: "Wall Mount" | "Multi-Zone" | "Central";
-  notes?: string;
+type ProductLine =
+  | "Airy"
+  | "Clivia"
+  | "Charmo"
+  | "Multizone"
+  | "Flexx Central"
+  | "Flexx Add-On";
+
+type EquipmentType =
+  | "Murale"
+  | "Cassette"
+  | "Console"
+  | "Gainable"
+  | "Sans conduits"
+  | "Avec conduits"
+  | "Mix"
+  | "Air Handler"
+  | "Cased Coil";
+
+type RebateOption = {
+  id: string;
+  line: ProductLine;
+  equipmentType: EquipmentType;
+  sizeLabel: string;
+  btu35C: number;
+  btuNeg8C: number;
+  outdoorUnit: string;
+  indoorUnit: string;
+  ahri: string;
+  rebate: number;
+  energyStar?: string;
+  coldClimate?: boolean;
 };
 
-type RebateMap = {
-  [key: string]: number | string;
-  updated?: string;
-};
+const CURRENCY = new Intl.NumberFormat("fr-CA", {
+  style: "currency",
+  currency: "CAD",
+  maximumFractionDigits: 0,
+});
 
-const unitOptions: UnitOption[] = [
-  { label: "CHARMO 9k", btu: "9000", category: "Wall Mount" },
-  { label: "CHARMO 12k", btu: "12000", category: "Wall Mount" },
-  { label: "CHARMO 18k", btu: "18000", category: "Wall Mount" },
-  { label: "CHARMO 24k", btu: "24000", category: "Wall Mount" },
+const DATA: RebateOption[] = [
+  // AIRY
+  {
+    id: "airy-murale-12",
+    line: "Airy",
+    equipmentType: "Murale",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 10300,
+    outdoorUnit: "GREGWH12AVDXED6DNA1O",
+    indoorUnit: "GREGWH12AVDXED6DNA1I",
+    ahri: "215386290",
+    rebate: 1236,
+    energyStar: "3,621,214",
+    coldClimate: true,
+  },
+  {
+    id: "airy-murale-18",
+    line: "Airy",
+    equipmentType: "Murale",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 15500,
+    outdoorUnit: "GREGWH18AVEXFD6DNA1O",
+    indoorUnit: "GREGWH18AVEXFD6DNA1I",
+    ahri: "215386340",
+    rebate: 1860,
+    energyStar: "3,621,215",
+    coldClimate: true,
+  },
+  {
+    id: "airy-cassette-12",
+    line: "Airy",
+    equipmentType: "Cassette",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 10300,
+    outdoorUnit: "GREGWH12AVDXED6DNA1O",
+    indoorUnit: "GREGKH12EBD6DNA1AI",
+    ahri: "215415524",
+    rebate: 1236,
+    energyStar: "4,439,239",
+    coldClimate: true,
+  },
+  {
+    id: "airy-console-12",
+    line: "Airy",
+    equipmentType: "Console",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 10300,
+    outdoorUnit: "GREGWH12AVDXED6DNA1O",
+    indoorUnit: "GREGEH12AAD6DNA1AI",
+    ahri: "216618225",
+    rebate: 1236,
+    energyStar: "4,511,760",
+    coldClimate: true,
+  },
+  {
+    id: "airy-gainable-12",
+    line: "Airy",
+    equipmentType: "Gainable",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 10300,
+    outdoorUnit: "GREGWH12AVDXED6DNA1O",
+    indoorUnit: "GREGFH12DAD6DNA1AI",
+    ahri: "216618221",
+    rebate: 1236,
+    energyStar: "4,511,756",
+    coldClimate: true,
+  },
 
-  { label: "CLIVIA 9k", btu: "9000", category: "Wall Mount" },
-  { label: "CLIVIA 12k", btu: "12000", category: "Wall Mount" },
-  { label: "CLIVIA 18k", btu: "18000", category: "Wall Mount" },
-  { label: "CLIVIA 24k", btu: "24000", category: "Wall Mount" },
+  // CLIVIA
+  {
+    id: "clivia-murale-12",
+    line: "Clivia",
+    equipmentType: "Murale",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 7700,
+    outdoorUnit: "GREGWH12AGCXDD6DNA4O",
+    indoorUnit: "GREGWH12AUCXDD6DNA2I",
+    ahri: "216032436",
+    rebate: 924,
+    energyStar: "3,723,379",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-murale-18",
+    line: "Clivia",
+    equipmentType: "Murale",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 14700,
+    outdoorUnit: "GREGWH18AGDXFD6DNA4O",
+    indoorUnit: "GREGWH18AUDXFD6DNA2I",
+    ahri: "216052270",
+    rebate: 1764,
+    energyStar: "3,799,051",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-murale-24",
+    line: "Clivia",
+    equipmentType: "Murale",
+    sizeLabel: "24k",
+    btu35C: 22000,
+    btuNeg8C: 19000,
+    outdoorUnit: "GREGWH24AGEXFD6DNA4O",
+    indoorUnit: "GREGWH24AUDXFD6DNA2I",
+    ahri: "216623541",
+    rebate: 2280,
+    energyStar: "3,893,642",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-cassette-12",
+    line: "Clivia",
+    equipmentType: "Cassette",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 10300,
+    outdoorUnit: "GREGWH12AGCXDD6DNA4O",
+    indoorUnit: "GREGKH12EBD6DNA1AI",
+    ahri: "216618222",
+    rebate: 1236,
+    energyStar: "4,511,757",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-cassette-24",
+    line: "Clivia",
+    equipmentType: "Cassette",
+    sizeLabel: "24k",
+    btu35C: 22000,
+    btuNeg8C: 19400,
+    outdoorUnit: "GREGWH24AGEXFD6DNA4O",
+    indoorUnit: "GREGKH24ECD6DNA1AI",
+    ahri: "216618217",
+    rebate: 2328,
+    energyStar: "4,511,738",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-gainable-12",
+    line: "Clivia",
+    equipmentType: "Gainable",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 10300,
+    outdoorUnit: "GREGWH12AGCXDD6DNA4O",
+    indoorUnit: "GREGFH12DAD6DNA1AI",
+    ahri: "216618221",
+    rebate: 1236,
+    energyStar: "4,511,756",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-gainable-18",
+    line: "Clivia",
+    equipmentType: "Gainable",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 14600,
+    outdoorUnit: "GREGWH18AGDXFD6DNA4O",
+    indoorUnit: "GREGFH18DBD6DNA1AI",
+    ahri: "211497195",
+    rebate: 730,
+    energyStar: "4,511,817",
+    coldClimate: true,
+  },
+  {
+    id: "clivia-gainable-24",
+    line: "Clivia",
+    equipmentType: "Gainable",
+    sizeLabel: "24k",
+    btu35C: 22000,
+    btuNeg8C: 19800,
+    outdoorUnit: "GREGWH24AGEXFD6DNA4O",
+    indoorUnit: "GREGFH24DBD6DNA1AI",
+    ahri: "216618216",
+    rebate: 2376,
+    energyStar: "4,511,737",
+    coldClimate: true,
+  },
 
-  { label: "AIRY 9k", btu: "9000", category: "Wall Mount" },
-  { label: "AIRY 12k", btu: "12000", category: "Wall Mount" },
-  { label: "AIRY 18k", btu: "18000", category: "Wall Mount" },
-  { label: "AIRY 24k", btu: "24000", category: "Wall Mount" },
+  // CHARMO
+  {
+    id: "charmo-murale-12",
+    line: "Charmo",
+    equipmentType: "Murale",
+    sizeLabel: "12k",
+    btu35C: 12000,
+    btuNeg8C: 9700,
+    outdoorUnit: "GREGWH12ATCXBD6DNA4O",
+    indoorUnit: "GREGWH12ATCXBD6DNA4I",
+    ahri: "215402236",
+    rebate: 1164,
+    energyStar: "4,428,974",
+    coldClimate: true,
+  },
+  {
+    id: "charmo-murale-18",
+    line: "Charmo",
+    equipmentType: "Murale",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 15300,
+    outdoorUnit: "GREGWH18ATDXDD6DNA4O",
+    indoorUnit: "GREGWH18ATDXDD6DNA4I",
+    ahri: "215224737",
+    rebate: 1836,
+    energyStar: "4,511,818",
+    coldClimate: true,
+  },
+  {
+    id: "charmo-murale-24",
+    line: "Charmo",
+    equipmentType: "Murale",
+    sizeLabel: "24k",
+    btu35C: 24000,
+    btuNeg8C: 19200,
+    outdoorUnit: "GREGWH24ATEXFD6DNA4O",
+    indoorUnit: "GREGWH24ATEXFD6DNA4I",
+    ahri: "215390442",
+    rebate: 2304,
+    energyStar: "4,511,761",
+    coldClimate: true,
+  },
+  {
+    id: "charmo-murale-36",
+    line: "Charmo",
+    equipmentType: "Murale",
+    sizeLabel: "36k",
+    btu35C: 33600,
+    btuNeg8C: 27400,
+    outdoorUnit: "GREGWH36ATEXHD6DNA1O",
+    indoorUnit: "GREGWH36ATEXHD6DNA1I",
+    ahri: "214568849",
+    rebate: 3288,
+    energyStar: "3,995,598",
+    coldClimate: true,
+  },
 
-  { label: "MULTI 18k", btu: "18000", category: "Multi-Zone" },
-  { label: "MULTI 24k", btu: "24000", category: "Multi-Zone" },
-  { label: "MULTI 30k", btu: "30000", category: "Multi-Zone" },
-  { label: "MULTI 36k", btu: "36000", category: "Multi-Zone" },
+  // MULTIZONE
+  {
+    id: "multizone-18-sans",
+    line: "Multizone",
+    equipmentType: "Sans conduits",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 17600,
+    outdoorUnit: "GREGWHD18ND6MO",
+    indoorUnit: "Appareils sans conduits",
+    ahri: "214931586",
+    rebate: 2112,
+    energyStar: "3,554,366",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-18-avec",
+    line: "Multizone",
+    equipmentType: "Avec conduits",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 17600,
+    outdoorUnit: "GREGWHD18ND6MO",
+    indoorUnit: "Appareils avec conduits",
+    ahri: "214931591",
+    rebate: 2112,
+    energyStar: "3,554,371",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-18-mix",
+    line: "Multizone",
+    equipmentType: "Mix",
+    sizeLabel: "18k",
+    btu35C: 18000,
+    btuNeg8C: 17600,
+    outdoorUnit: "GREGWHD18ND6MO",
+    indoorUnit: "Appareils mix",
+    ahri: "214931592",
+    rebate: 2112,
+    energyStar: "3,554,372",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-24-sans",
+    line: "Multizone",
+    equipmentType: "Sans conduits",
+    sizeLabel: "24k",
+    btu35C: 24000,
+    btuNeg8C: 23600,
+    outdoorUnit: "GREGWHD24ND6MO",
+    indoorUnit: "Appareils sans conduits",
+    ahri: "214931587",
+    rebate: 2832,
+    energyStar: "3,554,368",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-24-avec",
+    line: "Multizone",
+    equipmentType: "Avec conduits",
+    sizeLabel: "24k",
+    btu35C: 24000,
+    btuNeg8C: 22000,
+    outdoorUnit: "GREGWHD24ND6MO",
+    indoorUnit: "Appareils avec conduits",
+    ahri: "214931593",
+    rebate: 2640,
+    energyStar: "3,554,373",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-24-mix",
+    line: "Multizone",
+    equipmentType: "Mix",
+    sizeLabel: "24k",
+    btu35C: 24000,
+    btuNeg8C: 23000,
+    outdoorUnit: "GREGWHD24ND6MO",
+    indoorUnit: "Appareils mix",
+    ahri: "214931597",
+    rebate: 2760,
+    energyStar: "3,554,376",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-30-sans",
+    line: "Multizone",
+    equipmentType: "Sans conduits",
+    sizeLabel: "30k",
+    btu35C: 28400,
+    btuNeg8C: 28000,
+    outdoorUnit: "GREGWHD30ND6MO",
+    indoorUnit: "Appareils sans conduits",
+    ahri: "214931588",
+    rebate: 3360,
+    energyStar: "3,554,369",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-30-avec",
+    line: "Multizone",
+    equipmentType: "Avec conduits",
+    sizeLabel: "30k",
+    btu35C: 28400,
+    btuNeg8C: 27200,
+    outdoorUnit: "GREGWHD30ND6MO",
+    indoorUnit: "Appareils avec conduits",
+    ahri: "214931594",
+    rebate: 3264,
+    energyStar: "3,554,374",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-30-mix",
+    line: "Multizone",
+    equipmentType: "Mix",
+    sizeLabel: "30k",
+    btu35C: 28400,
+    btuNeg8C: 27600,
+    outdoorUnit: "GREGWHD30ND6MO",
+    indoorUnit: "Appareils mix",
+    ahri: "214931598",
+    rebate: 3312,
+    energyStar: "3,554,379",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-36-sans",
+    line: "Multizone",
+    equipmentType: "Sans conduits",
+    sizeLabel: "36k",
+    btu35C: 36000,
+    btuNeg8C: 36000,
+    outdoorUnit: "GREGWHD36ND6MO",
+    indoorUnit: "Appareils sans conduits",
+    ahri: "214931589",
+    rebate: 4320,
+    energyStar: "3,554,367",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-36-avec",
+    line: "Multizone",
+    equipmentType: "Avec conduits",
+    sizeLabel: "36k",
+    btu35C: 36000,
+    btuNeg8C: 36000,
+    outdoorUnit: "GREGWHD36ND6MO",
+    indoorUnit: "Appareils avec conduits",
+    ahri: "214931595",
+    rebate: 4320,
+    energyStar: "3,554,375",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-36-mix",
+    line: "Multizone",
+    equipmentType: "Mix",
+    sizeLabel: "36k",
+    btu35C: 36000,
+    btuNeg8C: 36000,
+    outdoorUnit: "GREGWHD36ND6MO",
+    indoorUnit: "Appareils mix",
+    ahri: "214931599",
+    rebate: 4320,
+    energyStar: "3,554,377",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-42-sans",
+    line: "Multizone",
+    equipmentType: "Sans conduits",
+    sizeLabel: "42k",
+    btu35C: 42000,
+    btuNeg8C: 44500,
+    outdoorUnit: "GREGWHD42ND6MO",
+    indoorUnit: "Appareils sans conduits",
+    ahri: "214931590",
+    rebate: 5340,
+    energyStar: "3,554,370",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-42-avec",
+    line: "Multizone",
+    equipmentType: "Avec conduits",
+    sizeLabel: "42k",
+    btu35C: 42000,
+    btuNeg8C: 44500,
+    outdoorUnit: "GREGWHD42ND6MO",
+    indoorUnit: "Appareils avec conduits",
+    ahri: "214931596",
+    rebate: 5340,
+    energyStar: "3,554,378",
+    coldClimate: true,
+  },
+  {
+    id: "multizone-42-mix",
+    line: "Multizone",
+    equipmentType: "Mix",
+    sizeLabel: "42k",
+    btu35C: 42000,
+    btuNeg8C: 44500,
+    outdoorUnit: "GREGWHD42ND6MO",
+    indoorUnit: "Appareils mix",
+    ahri: "214931600",
+    rebate: 5340,
+    energyStar: "3,554,380",
+    coldClimate: true,
+  },
 
-  { label: "FLEXX 24k Central", btu: "24000", category: "Central", notes: "Central" },
-  { label: "FLEXX 30k Central", btu: "30000", category: "Central", notes: "Central" },
-  { label: "FLEXX 36k Central", btu: "36000", category: "Central", notes: "Central" },
-  { label: "FLEXX 48k Central", btu: "48000", category: "Central", notes: "Central" },
-  { label: "FLEXX 60k Central", btu: "60000", category: "Central", notes: "Central" },
+  // FLEXX CENTRAL
+  {
+    id: "flexx-central-24",
+    line: "Flexx Central",
+    equipmentType: "Air Handler",
+    sizeLabel: "24k / 2 ton",
+    btu35C: 24000,
+    btuNeg8C: 20600,
+    outdoorUnit: "GREGUD36W2NHEDU",
+    indoorUnit: "GREGUD24AH2EDU",
+    ahri: "216621482",
+    rebate: 2472,
+    energyStar: "3,942,677",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-central-36-edu",
+    line: "Flexx Central",
+    equipmentType: "Air Handler",
+    sizeLabel: "36k / 3 ton",
+    btu35C: 34000,
+    btuNeg8C: 28200,
+    outdoorUnit: "GREGUD36W2NHEDU",
+    indoorUnit: "GREGUD36AH2EDU",
+    ahri: "214568826",
+    rebate: 3384,
+    energyStar: "3,436,596",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-central-36-gdu",
+    line: "Flexx Central",
+    equipmentType: "Air Handler",
+    sizeLabel: "36k / 3 ton",
+    btu35C: 34000,
+    btuNeg8C: 28200,
+    outdoorUnit: "GREGUD36W2NHEDU",
+    indoorUnit: "GREGUD36AH2GDU",
+    ahri: "217120760",
+    rebate: 3384,
+    energyStar: "4,006,778",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-central-48",
+    line: "Flexx Central",
+    equipmentType: "Air Handler",
+    sizeLabel: "48k / 4 ton",
+    btu35C: 48000,
+    btuNeg8C: 39500,
+    outdoorUnit: "GREGUD60W2NHEDU",
+    indoorUnit: "GREGUD48AH2EDU",
+    ahri: "216621484",
+    rebate: 4740,
+    energyStar: "3,942,618",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-central-60",
+    line: "Flexx Central",
+    equipmentType: "Air Handler",
+    sizeLabel: "60k / 5 ton",
+    btu35C: 53000,
+    btuNeg8C: 45000,
+    outdoorUnit: "GREGUD60W2NHEDU",
+    indoorUnit: "GREGUD60AH2GDU",
+    ahri: "214568857",
+    rebate: 5400,
+    energyStar: "3,436,893",
+    coldClimate: true,
+  },
+
+  // FLEXX ADD-ON
+  {
+    id: "flexx-addon-24",
+    line: "Flexx Add-On",
+    equipmentType: "Cased Coil",
+    sizeLabel: "24k / 2 ton",
+    btu35C: 23000,
+    btuNeg8C: 15000,
+    outdoorUnit: "GREGUD36W2NHEDU",
+    indoorUnit: "GREGCAC24FNHA",
+    ahri: "216768109",
+    rebate: 1800,
+    energyStar: "4,437,974",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-addon-36",
+    line: "Flexx Add-On",
+    equipmentType: "Cased Coil",
+    sizeLabel: "36k / 3 ton",
+    btu35C: 32000,
+    btuNeg8C: 22000,
+    outdoorUnit: "GREGUD36W2NHEDU",
+    indoorUnit: "GREGCAC36FNHA",
+    ahri: "216765692",
+    rebate: 2640,
+    energyStar: "4,437,972",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-addon-48",
+    line: "Flexx Add-On",
+    equipmentType: "Cased Coil",
+    sizeLabel: "48k / 4 ton",
+    btu35C: 47000,
+    btuNeg8C: 35200,
+    outdoorUnit: "GREGUD60W2NHEDU",
+    indoorUnit: "GREGCAC48HNHA",
+    ahri: "216768110",
+    rebate: 4224,
+    energyStar: "4,498,346",
+    coldClimate: true,
+  },
+  {
+    id: "flexx-addon-60",
+    line: "Flexx Add-On",
+    equipmentType: "Cased Coil",
+    sizeLabel: "60k / 5 ton",
+    btu35C: 52000,
+    btuNeg8C: 40000,
+    outdoorUnit: "GREGUD60W2NHEDU",
+    indoorUnit: "GREGCAC60HNHA",
+    ahri: "216765694",
+    rebate: 4800,
+    energyStar: "4,498,347",
+    coldClimate: true,
+  },
 ];
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+const LINE_ORDER: ProductLine[] = [
+  "Airy",
+  "Clivia",
+  "Charmo",
+  "Multizone",
+  "Flexx Central",
+  "Flexx Add-On",
+];
 
-export default function Home() {
-  const [selectedLabel, setSelectedLabel] = useState(unitOptions[0].label);
-  const [salePrice, setSalePrice] = useState("");
-  const [includeTax, setIncludeTax] = useState(true);
-  const [taxRate, setTaxRate] = useState("14.975");
-  const [addCasedCoil, setAddCasedCoil] = useState(false);
-  const [casedCoilPrice, setCasedCoilPrice] = useState("800");
-  const [rebates, setRebates] = useState<RebateMap | null>(null);
-  const [loadingRebates, setLoadingRebates] = useState(true);
+export default function Page() {
+  const [selectedLine, setSelectedLine] = useState<ProductLine>("Charmo");
+  const [selectedType, setSelectedType] = useState<EquipmentType | "">("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
-  useEffect(() => {
-    async function loadRebates() {
-      try {
-        const res = await fetch("/api/logisvert-rebate", { cache: "no-store" });
-        const data = await res.json();
-        setRebates(data);
-      } catch (error) {
-        console.error("Failed to load rebate data", error);
-        setRebates(null);
-      } finally {
-        setLoadingRebates(false);
-      }
-    }
+  const lineOptions = useMemo(
+    () => DATA.filter((item) => item.line === selectedLine),
+    [selectedLine]
+  );
 
-    loadRebates();
-  }, []);
+  const equipmentTypes = useMemo(() => {
+    return [...new Set(lineOptions.map((item) => item.equipmentType))];
+  }, [lineOptions]);
 
-  const selectedUnit = useMemo(() => {
-    return unitOptions.find((item) => item.label === selectedLabel) ?? unitOptions[0];
-  }, [selectedLabel]);
+  const sizeOptions = useMemo(() => {
+    return [
+      ...new Set(
+        lineOptions
+          .filter((item) => !selectedType || item.equipmentType === selectedType)
+          .map((item) => item.sizeLabel)
+      ),
+    ];
+  }, [lineOptions, selectedType]);
 
-  const rebate = Number(rebates?.[selectedUnit.btu] ?? 0);
-  const numericSalePrice = Number(salePrice) || 0;
-  const numericTaxRate = Number(taxRate) || 0;
-  const numericCasedCoil = addCasedCoil ? Number(casedCoilPrice) || 0 : 0;
+  const matchingOptions = useMemo(() => {
+    return lineOptions.filter((item) => {
+      const typeMatch = !selectedType || item.equipmentType === selectedType;
+      const sizeMatch = !selectedSize || item.sizeLabel === selectedSize;
+      return typeMatch && sizeMatch;
+    });
+  }, [lineOptions, selectedType, selectedSize]);
 
-  const subtotal = numericSalePrice + numericCasedCoil;
-  const taxMultiplier = 1 + numericTaxRate / 100;
-  const totalBeforeRebate = includeTax ? subtotal * taxMultiplier : subtotal;
-  const clientTotalAfterRebate = Math.max(totalBeforeRebate - rebate, 0);
+  const selectedOption = matchingOptions.length === 1 ? matchingOptions[0] : null;
 
-  const quickSummary =
-    numericSalePrice > 0
-      ? `${selectedUnit.label} • Rebate ${formatMoney(rebate)} • Client pays ${formatMoney(
-          clientTotalAfterRebate
-        )}`
-      : `${selectedUnit.label} • Rebate ${formatMoney(rebate)}`;
+  const handleLineChange = (line: ProductLine) => {
+    setSelectedLine(line);
+    setSelectedType("");
+    setSelectedSize("");
+  };
 
-  const isFlexx = selectedUnit.label.includes("FLEXX");
+  const showTypeDropdown = !["Flexx Central", "Flexx Add-On"].includes(selectedLine);
 
   return (
-    <main style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.headerRow}>
-          <div>
-            <h1 style={styles.title}>Gree Rebate Tool</h1>
-            <p style={styles.subtitle}>Live rebate lookup with customer total calculator</p>
-          </div>
-          <div style={styles.badge}>Live</div>
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      <div className="mx-auto max-w-3xl p-4 md:p-8">
+        <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
+          <h1 className="text-2xl font-bold md:text-3xl">
+            Calculateur Subvention Gree
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Sélectionne la gamme, le type d’équipement et la capacité. Le numéro
+            AHRI est trouvé automatiquement.
+          </p>
         </div>
 
-        <div style={styles.infoBar}>
-          <div>
-            <strong>Rebate data:</strong>{" "}
-            {loadingRebates ? "Loading..." : rebates ? "Connected" : "Unavailable"}
-          </div>
-          <div>
-            <strong>Updated:</strong> {String(rebates?.updated ?? "Not available")}
-          </div>
-        </div>
+        <div className="rounded-2xl bg-white p-5 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm font-semibold">
+                Gamme de produit
+              </label>
+              <select
+                value={selectedLine}
+                onChange={(e) => handleLineChange(e.target.value as ProductLine)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
+              >
+                {LINE_ORDER.map((line) => (
+                  <option key={line} value={line}>
+                    {line}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div style={styles.grid}>
-          <div style={styles.field}>
-            <label style={styles.label}>Model</label>
-            <select
-              value={selectedLabel}
-              onChange={(e) => setSelectedLabel(e.target.value)}
-              style={styles.select}
-            >
-              {unitOptions.map((option) => (
-                <option key={option.label} value={option.label}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>System price before rebate</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder="Example: 3500"
-              value={salePrice}
-              onChange={(e) => setSalePrice(e.target.value)}
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Tax rate %</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={taxRate}
-              onChange={(e) => setTaxRate(e.target.value)}
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Category</label>
-            <div style={styles.readOnlyBox}>{selectedUnit.category}</div>
-          </div>
-        </div>
-
-        {isFlexx && (
-          <div style={styles.addOnBox}>
-            <div style={styles.addOnTitle}>FLEXX add-ons</div>
-            <label style={styles.checkWrap}>
-              <input
-                type="checkbox"
-                checked={addCasedCoil}
-                onChange={(e) => setAddCasedCoil(e.target.checked)}
-              />
-              <span>Add cased coil</span>
-            </label>
-
-            {addCasedCoil && (
-              <div style={{ ...styles.field, marginTop: 12 }}>
-                <label style={styles.label}>Cased coil price</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={casedCoilPrice}
-                  onChange={(e) => setCasedCoilPrice(e.target.value)}
-                  style={styles.input}
-                />
+            {showTypeDropdown && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Type d’équipement
+                </label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => {
+                    setSelectedType(e.target.value as EquipmentType);
+                    setSelectedSize("");
+                  }}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
+                >
+                  <option value="">Choisir</option>
+                  {equipmentTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
-          </div>
-        )}
 
-        <div style={styles.switchRow}>
-          <label style={styles.checkWrap}>
-            <input
-              type="checkbox"
-              checked={includeTax}
-              onChange={(e) => setIncludeTax(e.target.checked)}
-            />
-            <span>Include tax in customer total</span>
-          </label>
-        </div>
-
-        <div style={styles.resultsGrid}>
-          <div style={styles.resultCard}>
-            <div style={styles.resultLabel}>Selected system</div>
-            <div style={styles.resultValue}>{selectedUnit.label}</div>
-            <div style={styles.resultSub}>
-              {selectedUnit.btu} BTU
-              {selectedUnit.notes ? ` • ${selectedUnit.notes}` : ""}
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Capacité
+              </label>
+              <select
+                value={selectedSize}
+                onChange={(e) => setSelectedSize(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
+              >
+                <option value="">Choisir</option>
+                {sizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div style={styles.resultCard}>
-            <div style={styles.resultLabel}>Live rebate amount</div>
-            <div style={styles.resultValue}>{formatMoney(rebate)}</div>
-            <div style={styles.resultSub}>Pulled from your rebate endpoint</div>
-          </div>
+          <div className="mt-6">
+            {!selectedSize ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                Fais une sélection complète pour afficher la subvention exacte.
+              </div>
+            ) : matchingOptions.length === 0 ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="font-semibold text-red-700">
+                  Aucun modèle admissible trouvé
+                </p>
+                <p className="mt-1 text-sm text-red-600">
+                  Cette combinaison ne semble pas être admissible selon la liste.
+                </p>
+              </div>
+            ) : matchingOptions.length > 1 && !selectedOption ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="font-semibold text-amber-800">
+                  Plusieurs options trouvées
+                </p>
+                <p className="mt-1 text-sm text-amber-700">
+                  Choisis un type ou une capacité plus précise.
+                </p>
 
-          <div style={styles.resultCard}>
-            <div style={styles.resultLabel}>Customer total after rebate</div>
-            <div style={styles.resultValue}>{formatMoney(clientTotalAfterRebate)}</div>
-            <div style={styles.resultSub}>
-              {includeTax ? "Tax included" : "Tax not included"}
-            </div>
-          </div>
-        </div>
+                <div className="mt-4 space-y-3">
+                  {matchingOptions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedType(item.equipmentType);
+                        setSelectedSize(item.sizeLabel);
+                      }}
+                      className="w-full rounded-xl border border-amber-200 bg-white p-4 text-left transition hover:border-amber-400"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="font-semibold">
+                            {item.line} · {item.equipmentType} · {item.sizeLabel}
+                          </div>
+                          <div className="mt-1 text-sm text-slate-600">
+                            AHRI: {item.ahri}
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-slate-900">
+                          {CURRENCY.format(item.rebate)}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : selectedOption ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                      Subvention possible
+                    </p>
+                    <h2 className="mt-1 text-3xl font-bold text-emerald-900">
+                      {CURRENCY.format(selectedOption.rebate)}
+                    </h2>
+                    <p className="mt-2 text-sm text-emerald-800">
+                      {selectedOption.line} · {selectedOption.equipmentType} ·{" "}
+                      {selectedOption.sizeLabel}
+                    </p>
+                  </div>
 
-        <div style={styles.breakdownBox}>
-          <div style={styles.breakdownRow}>
-            <span>System price</span>
-            <strong>{formatMoney(numericSalePrice)}</strong>
-          </div>
-          {addCasedCoil && (
-            <div style={styles.breakdownRow}>
-              <span>Cased coil</span>
-              <strong>{formatMoney(numericCasedCoil)}</strong>
-            </div>
-          )}
-          <div style={styles.breakdownRow}>
-            <span>Subtotal</span>
-            <strong>{formatMoney(subtotal)}</strong>
-          </div>
-          <div style={styles.breakdownRow}>
-            <span>{includeTax ? `Total with ${taxRate}% tax` : "Total before tax"}</span>
-            <strong>{formatMoney(totalBeforeRebate)}</strong>
-          </div>
-          <div style={{ ...styles.breakdownRow, ...styles.breakdownFinal }}>
-            <span>After rebate</span>
-            <strong>{formatMoney(clientTotalAfterRebate)}</strong>
-          </div>
-        </div>
-
-        <div style={styles.summaryBox}>
-          <div style={styles.summaryTitle}>Quick summary</div>
-          <div style={styles.summaryText}>{quickSummary}</div>
-        </div>
-
-        <div style={styles.tableWrap}>
-          <div style={styles.tableTitle}>Available systems</div>
-          <div style={styles.table}>
-            {unitOptions.map((item) => (
-              <div key={item.label} style={styles.tableRow}>
-                <div>
-                  <div style={styles.tableMain}>{item.label}</div>
-                  <div style={styles.tableSub}>
-                    {item.category} • {item.btu} BTU
-                    {item.notes ? ` • ${item.notes}` : ""}
+                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                    <div className="text-xs font-semibold uppercase text-slate-500">
+                      AHRI
+                    </div>
+                    <div className="text-lg font-bold">{selectedOption.ahri}</div>
                   </div>
                 </div>
-                <div style={styles.tableAmount}>{formatMoney(Number(rebates?.[item.btu] ?? 0))}</div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  <InfoCard
+                    label="Unité extérieure"
+                    value={selectedOption.outdoorUnit}
+                  />
+                  <InfoCard
+                    label="Unité intérieure"
+                    value={selectedOption.indoorUnit}
+                  />
+                  <InfoCard
+                    label="Capacité à 35°C"
+                    value={`${selectedOption.btu35C.toLocaleString()} BTU`}
+                  />
+                  <InfoCard
+                    label="Capacité à -8°C"
+                    value={`${selectedOption.btuNeg8C.toLocaleString()} BTU`}
+                  />
+                </div>
               </div>
-            ))}
+            ) : null}
           </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold">Résumé des règles</h3>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <li>• Gree seulement</li>
+            <li>• AHRI trouvé automatiquement</li>
+            <li>• Flexx Central et Flexx Add-On sont séparés</li>
+            <li>• Pas besoin d’entrer le numéro AHRI manuellement</li>
+            <li>• Si une combinaison n’est pas dans la liste, on ne l’affiche pas</li>
+          </ul>
         </div>
       </div>
     </main>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f4f6f8",
-    padding: "24px 16px",
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  },
-  card: {
-    maxWidth: 980,
-    margin: "0 auto",
-    background: "#ffffff",
-    borderRadius: 18,
-    padding: 20,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-  },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 16,
-    flexWrap: "wrap",
-  },
-  title: {
-    fontSize: 34,
-    lineHeight: 1.1,
-    margin: 0,
-    color: "#111827",
-  },
-  subtitle: {
-    margin: "8px 0 0 0",
-    color: "#6b7280",
-    fontSize: 15,
-  },
-  badge: {
-    background: "#dcfce7",
-    color: "#166534",
-    padding: "8px 12px",
-    borderRadius: 999,
-    fontWeight: 700,
-    fontSize: 14,
-  },
-  infoBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    flexWrap: "wrap",
-    padding: "12px 14px",
-    borderRadius: 14,
-    background: "#eff6ff",
-    border: "1px solid #bfdbfe",
-    marginBottom: 16,
-    color: "#1e3a8a",
-    fontSize: 14,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 14,
-    marginBottom: 14,
-  },
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#374151",
-  },
-  select: {
-    height: 46,
-    borderRadius: 12,
-    border: "1px solid #d1d5db",
-    padding: "0 12px",
-    fontSize: 15,
-    background: "#fff",
-  },
-  input: {
-    height: 46,
-    borderRadius: 12,
-    border: "1px solid #d1d5db",
-    padding: "0 12px",
-    fontSize: 15,
-    background: "#fff",
-  },
-  readOnlyBox: {
-    height: 46,
-    borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    padding: "0 12px",
-    fontSize: 15,
-    background: "#f9fafb",
-    display: "flex",
-    alignItems: "center",
-    color: "#111827",
-    fontWeight: 600,
-  },
-  addOnBox: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    padding: 16,
-    background: "#fafafa",
-    marginBottom: 14,
-  },
-  addOnTitle: {
-    fontSize: 15,
-    fontWeight: 800,
-    color: "#111827",
-    marginBottom: 10,
-  },
-  switchRow: {
-    margin: "8px 0 18px 0",
-  },
-  checkWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    color: "#374151",
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  resultsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 14,
-    marginBottom: 18,
-  },
-  resultCard: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    padding: 16,
-  },
-  resultLabel: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginBottom: 8,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  resultValue: {
-    fontSize: 28,
-    fontWeight: 800,
-    color: "#111827",
-    lineHeight: 1.1,
-  },
-  resultSub: {
-    marginTop: 6,
-    color: "#6b7280",
-    fontSize: 14,
-  },
-  breakdownBox: {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 18,
-  },
-  breakdownRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 16,
-    padding: "8px 0",
-    color: "#374151",
-  },
-  breakdownFinal: {
-    borderTop: "1px solid #e5e7eb",
-    marginTop: 6,
-    paddingTop: 12,
-    fontSize: 16,
-    color: "#111827",
-  },
-  summaryBox: {
-    background: "#eef2ff",
-    border: "1px solid #c7d2fe",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  summaryTitle: {
-    fontSize: 13,
-    fontWeight: 800,
-    color: "#4338ca",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 6,
-  },
-  summaryText: {
-    fontSize: 16,
-    color: "#1f2937",
-    fontWeight: 600,
-  },
-  tableWrap: {
-    marginTop: 6,
-  },
-  tableTitle: {
-    fontSize: 18,
-    fontWeight: 800,
-    color: "#111827",
-    marginBottom: 12,
-  },
-  table: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  tableRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
-    padding: 14,
-    borderBottom: "1px solid #e5e7eb",
-    background: "#fff",
-  },
-  tableMain: {
-    fontWeight: 700,
-    color: "#111827",
-    fontSize: 15,
-  },
-  tableSub: {
-    color: "#6b7280",
-    fontSize: 13,
-    marginTop: 3,
-  },
-  tableAmount: {
-    fontWeight: 800,
-    color: "#111827",
-    whiteSpace: "nowrap",
-  },
-};
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white p-4 shadow-sm">
+      <div className="text-xs font-semibold uppercase text-slate-500">{label}</div>
+      <div className="mt-1 break-all text-sm font-medium text-slate-900">
+        {value}
+      </div>
+    </div>
+  );
+  }
