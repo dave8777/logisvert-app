@@ -84,7 +84,7 @@ export default function Page() {
 
     try {
       const res = await fetch(
-        `/api/logisvert-lookup?ahri=${encodeURIComponent(
+        `/api/logisvert-rebate?ahri=${encodeURIComponent(
           selectedOption.ahri
         )}&installationDate=${encodeURIComponent(installationDate)}`,
         { cache: "no-store" }
@@ -326,10 +326,12 @@ export default function Page() {
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase text-slate-500">{label}</div>
+      <div className="text-xs font-semibold uppercase text-slate-500">
+        {label}
+      </div>
       <div className="mt-1 break-all text-sm font-medium text-slate-900">
         {value}
       </div>
     </div>
   );
-}
+                  }
