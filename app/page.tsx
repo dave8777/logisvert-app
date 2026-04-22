@@ -68,9 +68,8 @@ const GREE_MODELS: ModelRow[] = [
   { series: "Multizone", category: "Mix", size: "18k", outdoor: "GREGWHD18ND6MO", indoor: "Appareils mix", ahri: "214931592", rebate: 2112 },
 
   { series: "Multizone", category: "Sans conduits", size: "24k", outdoor: "GREGWHD24ND6MO", indoor: "Appareils sans conduits", ahri: "214931587", rebate: 2832 },
-  { series: "Multizone", category: "Avec conduits", size: "24k", outdoor: "GREGWHD24ND6MO", indoor: "Appareils avec conduits", ahri: "214931593", rebate: 2640 },
-  { series: "Multizone", category: "Mix", size: "24k", outdoor: "GREGWHD24ND6MO", indoor: "Appareils mix", ahri: "214931597", rebate: 2760 },
-
+{ series: "Multizone", category: "Avec conduits", size: "24k", outdoor: "GREGWHD24ND6MO", indoor: "Appareils avec conduits", ahri: "214931593", rebate: 2640 },
+{ series: "Multizone", category: "Mix", size: "24k", outdoor: "GREGWHD24ND6MO", indoor: "Appareils mix", ahri: "214931597", rebate: 2760 },
   { series: "Multizone", category: "Sans conduits", size: "30k", outdoor: "GREGWHD30ND6MO", indoor: "Appareils sans conduits", ahri: "214931588", rebate: 3360 },
   { series: "Multizone", category: "Avec conduits", size: "30k", outdoor: "GREGWHD30ND6MO", indoor: "Appareils avec conduits", ahri: "214931594", rebate: 3264 },
   { series: "Multizone", category: "Mix", size: "30k", outdoor: "GREGWHD30ND6MO", indoor: "Appareils mix", ahri: "214931598", rebate: 3312 },
