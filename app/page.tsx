@@ -644,23 +644,24 @@ export default function Page() {
   const [selectedType, setSelectedType] = useState<EquipmentType | "">("");
   const [selectedSize, setSelectedSize] = useState<string>("");
 
-  const lineOptions = useMemo(
-    () => DATA.filter((item) => item.line === selectedLine),
-    [selectedLine]
-  );
+  const lineOptions = useMemo(() => {
+    return DATA.filter((item) => item.line === selectedLine);
+  }, [selectedLine]);
 
   const equipmentTypes = useMemo(() => {
-    return [...new Set(lineOptions.map((item) => item.equipmentType))];
+    return Array.from(
+      new Set(lineOptions.map((item) => item.equipmentType))
+    );
   }, [lineOptions]);
 
   const sizeOptions = useMemo(() => {
-    return [
-      ...new Set(
+    return Array.from(
+      new Set(
         lineOptions
           .filter((item) => !selectedType || item.equipmentType === selectedType)
           .map((item) => item.sizeLabel)
-      ),
-    ];
+      )
+    );
   }, [lineOptions, selectedType]);
 
   const matchingOptions = useMemo(() => {
@@ -679,7 +680,8 @@ export default function Page() {
     setSelectedSize("");
   };
 
-  const showTypeDropdown = !["Flexx Central", "Flexx Add-On"].includes(selectedLine);
+  const showTypeDropdown =
+    selectedLine !== "Flexx Central" && selectedLine !== "Flexx Add-On";
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
@@ -877,4 +879,4 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   );
-  }
+    }
