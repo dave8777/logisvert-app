@@ -1,73 +1,46 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-type Brand = "Gree" | "Flexx";
+import { useEffect, useMemo, useState } from "react";
 
 type UnitOption = {
   label: string;
   btu: string;
-  rebate: number;
-  brand: Brand;
+  category: "Wall Mount" | "Multi-Zone" | "Central";
   notes?: string;
 };
 
-const greeOptions: UnitOption[] = [
-  { label: "LIVO+ 9k", btu: "9000", rebate: 1728, brand: "Gree" },
-  { label: "LIVO+ 12k", btu: "12000", rebate: 1728, brand: "Gree" },
-  { label: "LIVO+ 18k", btu: "18000", rebate: 1836, brand: "Gree" },
-  { label: "LIVO+ 24k", btu: "24000", rebate: 1836, brand: "Gree" },
+type RebateMap = {
+  [key: string]: number | string;
+  updated?: string;
+};
 
-  { label: "CLIVIA 9k", btu: "9000", rebate: 1728, brand: "Gree" },
-  { label: "CLIVIA 12k", btu: "12000", rebate: 1728, brand: "Gree" },
-  { label: "CLIVIA 18k", btu: "18000", rebate: 1836, brand: "Gree" },
-  { label: "CLIVIA 24k", btu: "24000", rebate: 1836, brand: "Gree" },
+const unitOptions: UnitOption[] = [
+  { label: "CHARMO 9k", btu: "9000", category: "Wall Mount" },
+  { label: "CHARMO 12k", btu: "12000", category: "Wall Mount" },
+  { label: "CHARMO 18k", btu: "18000", category: "Wall Mount" },
+  { label: "CHARMO 24k", btu: "24000", category: "Wall Mount" },
 
-  { label: "MULTI 18k", btu: "18000", rebate: 1836, brand: "Gree" },
-  { label: "MULTI 24k", btu: "24000", rebate: 1836, brand: "Gree" },
-  { label: "MULTI 30k", btu: "30000", rebate: 2144, brand: "Gree" },
-  { label: "MULTI 36k", btu: "36000", rebate: 2144, brand: "Gree" },
+  { label: "CLIVIA 9k", btu: "9000", category: "Wall Mount" },
+  { label: "CLIVIA 12k", btu: "12000", category: "Wall Mount" },
+  { label: "CLIVIA 18k", btu: "18000", category: "Wall Mount" },
+  { label: "CLIVIA 24k", btu: "24000", category: "Wall Mount" },
+
+  { label: "AIRY 9k", btu: "9000", category: "Wall Mount" },
+  { label: "AIRY 12k", btu: "12000", category: "Wall Mount" },
+  { label: "AIRY 18k", btu: "18000", category: "Wall Mount" },
+  { label: "AIRY 24k", btu: "24000", category: "Wall Mount" },
+
+  { label: "MULTI 18k", btu: "18000", category: "Multi-Zone" },
+  { label: "MULTI 24k", btu: "24000", category: "Multi-Zone" },
+  { label: "MULTI 30k", btu: "30000", category: "Multi-Zone" },
+  { label: "MULTI 36k", btu: "36000", category: "Multi-Zone" },
+
+  { label: "FLEXX 24k Central", btu: "24000", category: "Central", notes: "Central" },
+  { label: "FLEXX 30k Central", btu: "30000", category: "Central", notes: "Central" },
+  { label: "FLEXX 36k Central", btu: "36000", category: "Central", notes: "Central" },
+  { label: "FLEXX 48k Central", btu: "48000", category: "Central", notes: "Central" },
+  { label: "FLEXX 60k Central", btu: "60000", category: "Central", notes: "Central" },
 ];
-
-const flexxOptions: UnitOption[] = [
-  {
-    label: "FLEXX 24k Central",
-    btu: "24000",
-    rebate: 1836,
-    brand: "Flexx",
-    notes: "Central system",
-  },
-  {
-    label: "FLEXX 30k Central",
-    btu: "30000",
-    rebate: 2144,
-    brand: "Flexx",
-    notes: "Central system",
-  },
-  {
-    label: "FLEXX 36k Central",
-    btu: "36000",
-    rebate: 2144,
-    brand: "Flexx",
-    notes: "Central system",
-  },
-  {
-    label: "FLEXX 48k Central",
-    btu: "48000",
-    rebate: 2632,
-    brand: "Flexx",
-    notes: "Central system",
-  },
-  {
-    label: "FLEXX 60k Central",
-    btu: "60000",
-    rebate: 2872,
-    brand: "Flexx",
-    notes: "Central system",
-  },
-];
-
-const allOptions = [...greeOptions, ...flexxOptions];
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-CA", {
@@ -78,33 +51,54 @@ function formatMoney(value: number) {
 }
 
 export default function Home() {
-  const [brand, setBrand] = useState<Brand>("Gree");
-  const [selectedLabel, setSelectedLabel] = useState<string>(greeOptions[0].label);
-  const [salePrice, setSalePrice] = useState<string>("");
+  const [selectedLabel, setSelectedLabel] = useState(unitOptions[0].label);
+  const [salePrice, setSalePrice] = useState("");
   const [includeTax, setIncludeTax] = useState(true);
   const [taxRate, setTaxRate] = useState("14.975");
+  const [addCasedCoil, setAddCasedCoil] = useState(false);
+  const [casedCoilPrice, setCasedCoilPrice] = useState("800");
+  const [rebates, setRebates] = useState<RebateMap | null>(null);
+  const [loadingRebates, setLoadingRebates] = useState(true);
 
-  const visibleOptions = useMemo(() => {
-    return brand === "Gree" ? greeOptions : flexxOptions;
-  }, [brand]);
+  useEffect(() => {
+    async function loadRebates() {
+      try {
+        const res = await fetch("/api/logisvert-rebate", { cache: "no-store" });
+        const data = await res.json();
+        setRebates(data);
+      } catch (error) {
+        console.error("Failed to load rebate data", error);
+        setRebates(null);
+      } finally {
+        setLoadingRebates(false);
+      }
+    }
 
-  const selectedUnit =
-    visibleOptions.find((item) => item.label === selectedLabel) ?? visibleOptions[0];
+    loadRebates();
+  }, []);
 
+  const selectedUnit = useMemo(() => {
+    return unitOptions.find((item) => item.label === selectedLabel) ?? unitOptions[0];
+  }, [selectedLabel]);
+
+  const rebate = Number(rebates?.[selectedUnit.btu] ?? 0);
   const numericSalePrice = Number(salePrice) || 0;
   const numericTaxRate = Number(taxRate) || 0;
-  const rebate = selectedUnit?.rebate ?? 0;
+  const numericCasedCoil = addCasedCoil ? Number(casedCoilPrice) || 0 : 0;
 
+  const subtotal = numericSalePrice + numericCasedCoil;
   const taxMultiplier = 1 + numericTaxRate / 100;
-  const totalBeforeRebate = includeTax
-    ? numericSalePrice * taxMultiplier
-    : numericSalePrice;
-  const clientNet = Math.max(totalBeforeRebate - rebate, 0);
+  const totalBeforeRebate = includeTax ? subtotal * taxMultiplier : subtotal;
+  const clientTotalAfterRebate = Math.max(totalBeforeRebate - rebate, 0);
 
   const quickSummary =
     numericSalePrice > 0
-      ? `${selectedUnit.label} • Rebate ${formatMoney(rebate)} • Client pays ${formatMoney(clientNet)}`
+      ? `${selectedUnit.label} • Rebate ${formatMoney(rebate)} • Client pays ${formatMoney(
+          clientTotalAfterRebate
+        )}`
       : `${selectedUnit.label} • Rebate ${formatMoney(rebate)}`;
+
+  const isFlexx = selectedUnit.label.includes("FLEXX");
 
   return (
     <main style={styles.page}>
@@ -112,41 +106,30 @@ export default function Home() {
         <div style={styles.headerRow}>
           <div>
             <h1 style={styles.title}>Gree Rebate Tool</h1>
-            <p style={styles.subtitle}>
-              Fast LogisVert-style price and rebate calculator
-            </p>
+            <p style={styles.subtitle}>Live rebate lookup with customer total calculator</p>
           </div>
           <div style={styles.badge}>Live</div>
         </div>
 
+        <div style={styles.infoBar}>
+          <div>
+            <strong>Rebate data:</strong>{" "}
+            {loadingRebates ? "Loading..." : rebates ? "Connected" : "Unavailable"}
+          </div>
+          <div>
+            <strong>Updated:</strong> {String(rebates?.updated ?? "Not available")}
+          </div>
+        </div>
+
         <div style={styles.grid}>
           <div style={styles.field}>
-            <label style={styles.label}>Brand</label>
-            <select
-              value={brand}
-              onChange={(e) => {
-                const nextBrand = e.target.value as Brand;
-                setBrand(nextBrand);
-                const nextOptions = nextBrand === "Gree" ? greeOptions : flexxOptions;
-                setSelectedLabel(nextOptions[0].label);
-              }}
-              style={styles.select}
-            >
-              <option value="Gree">Gree</option>
-              <option value="Flexx">Flexx</option>
-            </select>
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>
-              {brand === "Flexx" ? "Flexx model" : "Model"}
-            </label>
+            <label style={styles.label}>Model</label>
             <select
               value={selectedLabel}
               onChange={(e) => setSelectedLabel(e.target.value)}
               style={styles.select}
             >
-              {visibleOptions.map((option) => (
+              {unitOptions.map((option) => (
                 <option key={option.label} value={option.label}>
                   {option.label}
                 </option>
@@ -155,7 +138,7 @@ export default function Home() {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Sale price before rebate</label>
+            <label style={styles.label}>System price before rebate</label>
             <input
               type="number"
               inputMode="decimal"
@@ -176,7 +159,39 @@ export default function Home() {
               style={styles.input}
             />
           </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Category</label>
+            <div style={styles.readOnlyBox}>{selectedUnit.category}</div>
+          </div>
         </div>
+
+        {isFlexx && (
+          <div style={styles.addOnBox}>
+            <div style={styles.addOnTitle}>FLEXX add-ons</div>
+            <label style={styles.checkWrap}>
+              <input
+                type="checkbox"
+                checked={addCasedCoil}
+                onChange={(e) => setAddCasedCoil(e.target.checked)}
+              />
+              <span>Add cased coil</span>
+            </label>
+
+            {addCasedCoil && (
+              <div style={{ ...styles.field, marginTop: 12 }}>
+                <label style={styles.label}>Cased coil price</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={casedCoilPrice}
+                  onChange={(e) => setCasedCoilPrice(e.target.value)}
+                  style={styles.input}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={styles.switchRow}>
           <label style={styles.checkWrap}>
@@ -185,13 +200,13 @@ export default function Home() {
               checked={includeTax}
               onChange={(e) => setIncludeTax(e.target.checked)}
             />
-            <span>Include tax in client total</span>
+            <span>Include tax in customer total</span>
           </label>
         </div>
 
         <div style={styles.resultsGrid}>
           <div style={styles.resultCard}>
-            <div style={styles.resultLabel}>Selected unit</div>
+            <div style={styles.resultLabel}>Selected system</div>
             <div style={styles.resultValue}>{selectedUnit.label}</div>
             <div style={styles.resultSub}>
               {selectedUnit.btu} BTU
@@ -200,17 +215,42 @@ export default function Home() {
           </div>
 
           <div style={styles.resultCard}>
-            <div style={styles.resultLabel}>Eligible rebate</div>
+            <div style={styles.resultLabel}>Live rebate amount</div>
             <div style={styles.resultValue}>{formatMoney(rebate)}</div>
-            <div style={styles.resultSub}>Applied after sale price</div>
+            <div style={styles.resultSub}>Pulled from your rebate endpoint</div>
           </div>
 
           <div style={styles.resultCard}>
-            <div style={styles.resultLabel}>Client total after rebate</div>
-            <div style={styles.resultValue}>{formatMoney(clientNet)}</div>
+            <div style={styles.resultLabel}>Customer total after rebate</div>
+            <div style={styles.resultValue}>{formatMoney(clientTotalAfterRebate)}</div>
             <div style={styles.resultSub}>
               {includeTax ? "Tax included" : "Tax not included"}
             </div>
+          </div>
+        </div>
+
+        <div style={styles.breakdownBox}>
+          <div style={styles.breakdownRow}>
+            <span>System price</span>
+            <strong>{formatMoney(numericSalePrice)}</strong>
+          </div>
+          {addCasedCoil && (
+            <div style={styles.breakdownRow}>
+              <span>Cased coil</span>
+              <strong>{formatMoney(numericCasedCoil)}</strong>
+            </div>
+          )}
+          <div style={styles.breakdownRow}>
+            <span>Subtotal</span>
+            <strong>{formatMoney(subtotal)}</strong>
+          </div>
+          <div style={styles.breakdownRow}>
+            <span>{includeTax ? `Total with ${taxRate}% tax` : "Total before tax"}</span>
+            <strong>{formatMoney(totalBeforeRebate)}</strong>
+          </div>
+          <div style={{ ...styles.breakdownRow, ...styles.breakdownFinal }}>
+            <span>After rebate</span>
+            <strong>{formatMoney(clientTotalAfterRebate)}</strong>
           </div>
         </div>
 
@@ -222,16 +262,16 @@ export default function Home() {
         <div style={styles.tableWrap}>
           <div style={styles.tableTitle}>Available systems</div>
           <div style={styles.table}>
-            {allOptions.map((item) => (
+            {unitOptions.map((item) => (
               <div key={item.label} style={styles.tableRow}>
                 <div>
                   <div style={styles.tableMain}>{item.label}</div>
                   <div style={styles.tableSub}>
-                    {item.brand} • {item.btu} BTU
+                    {item.category} • {item.btu} BTU
                     {item.notes ? ` • ${item.notes}` : ""}
                   </div>
                 </div>
-                <div style={styles.tableAmount}>{formatMoney(item.rebate)}</div>
+                <div style={styles.tableAmount}>{formatMoney(Number(rebates?.[item.btu] ?? 0))}</div>
               </div>
             ))}
           </div>
@@ -262,7 +302,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 16,
     flexWrap: "wrap",
   },
   title: {
@@ -282,6 +322,19 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 12px",
     borderRadius: 999,
     fontWeight: 700,
+    fontSize: 14,
+  },
+  infoBar: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+    padding: "12px 14px",
+    borderRadius: 14,
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
+    marginBottom: 16,
+    color: "#1e3a8a",
     fontSize: 14,
   },
   grid: {
@@ -315,6 +368,31 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "0 12px",
     fontSize: 15,
     background: "#fff",
+  },
+  readOnlyBox: {
+    height: 46,
+    borderRadius: 12,
+    border: "1px solid #e5e7eb",
+    padding: "0 12px",
+    fontSize: 15,
+    background: "#f9fafb",
+    display: "flex",
+    alignItems: "center",
+    color: "#111827",
+    fontWeight: 600,
+  },
+  addOnBox: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 16,
+    padding: 16,
+    background: "#fafafa",
+    marginBottom: 14,
+  },
+  addOnTitle: {
+    fontSize: 15,
+    fontWeight: 800,
+    color: "#111827",
+    marginBottom: 10,
   },
   switchRow: {
     margin: "8px 0 18px 0",
@@ -357,6 +435,27 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 6,
     color: "#6b7280",
     fontSize: 14,
+  },
+  breakdownBox: {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 18,
+  },
+  breakdownRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 16,
+    padding: "8px 0",
+    color: "#374151",
+  },
+  breakdownFinal: {
+    borderTop: "1px solid #e5e7eb",
+    marginTop: 6,
+    paddingTop: 12,
+    fontSize: 16,
+    color: "#111827",
   },
   summaryBox: {
     background: "#eef2ff",
