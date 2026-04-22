@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chromium } from "playwright";
+import path from "path";
+
+const executablePath = path.join(
+  process.cwd(),
+  "node_modules",
+  "playwright-core",
+  ".local-browsers",
+  "chromium",
+  "chrome-linux",
+  "chrome"
+);
+
+browser = await chromium.launch({
+  headless: true,
+  executablePath,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"],
+});
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
