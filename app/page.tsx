@@ -9,14 +9,19 @@ import {
   type ProductLine,
 } from "../lib/gree-options";
 
+type InstallationType =
+  | "Remplacement d’une thermopompe existante"
+  | "Nouvelle installation";
+
 type LookupState =
   | { status: "idle" }
   | { status: "loading" }
   | {
       status: "success";
       amount: number;
-      amountLabel: string;
+      amountLabel?: string;
       installationDate: string;
+      source?: string;
     }
   | {
       status: "error";
@@ -36,6 +41,9 @@ export default function Page() {
   const [installationDate, setInstallationDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
+  const [installationType, setInstallationType] =
+    useState<InstallationType>("Remplacement d’une thermopompe existante");
+  const [quantity, setQuantity] = useState(1);
   const [lookup, setLookup] = useState<LookupState>({ status: "idle" });
 
   const lineOptions = useMemo(() => {
@@ -70,12 +78,16 @@ export default function Page() {
   const showTypeDropdown =
     selectedLine !== "Flexx Central" && selectedLine !== "Flexx Add-On";
 
-  const handleLineChange = (line: ProductLine) => {
+  function resetLookup() {
+    setLookup({ status: "idle" });
+  }
+
+  function handleLineChange(line: ProductLine) {
     setSelectedLine(line);
     setSelectedType("");
     setSelectedSize("");
-    setLookup({ status: "idle" });
-  };
+    resetLookup();
+  }
 
   async function handleLiveLookup() {
     if (!selectedOption) return;
@@ -83,12 +95,16 @@ export default function Page() {
     setLookup({ status: "loading" });
 
     try {
-      const res = await fetch(
-        `/api/logisvert-rebate?ahri=${encodeURIComponent(
-          selectedOption.ahri
-        )}&installationDate=${encodeURIComponent(installationDate)}`,
-        { cache: "no-store" }
-      );
+      const params = new URLSearchParams({
+        ahri: selectedOption.ahri,
+        installationDate,
+        installationType,
+        quantity: String(quantity),
+      });
+
+      const res = await fetch(`/api/logisvert-rebate?${params.toString()}`, {
+        cache: "no-store",
+      });
 
       const data = await res.json();
 
@@ -100,9 +116,10 @@ export default function Page() {
 
       setLookup({
         status: "success",
-        amount: data.amount,
+        amount: Number(data.amount ?? 0),
         amountLabel: data.amountLabel,
-        installationDate: data.installationDate,
+        installationDate: data.installationDate ?? installationDate,
+        source: data.source,
       });
     } catch (error) {
       setLookup({
@@ -117,20 +134,39 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
-      <div className="mx-auto max-w-3xl p-4 md:p-8">
+      <div className="mx-auto max-w-5xl p-4 md:p-8">
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
           <h1 className="text-2xl font-bold md:text-3xl">
             Calculateur Subvention Gree
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Cette version n’utilise aucun montant statique du PDF. Le montant est
-            lu en direct à partir du numéro AHRI via LogisVert.
+            Choisissez votre unité dans vos propres listes. Le numéro AHRI est
+            inséré automatiquement puis envoyé à la recherche LogisVert.
           </p>
         </div>
 
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Type d’installation
+              </label>
+              <select
+                value={installationType}
+                onChange={(e) => {
+                  setInstallationType(e.target.value as InstallationType);
+                  resetLookup();
+                }}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
+              >
+                <option value="Remplacement d’une thermopompe existante">
+                  Remplacement d’une thermopompe existante
+                </option>
+                <option value="Nouvelle installation">Nouvelle installation</option>
+              </select>
+            </div>
+
+            <div>
               <label className="mb-2 block text-sm font-semibold">
                 Date d’installation
               </label>
@@ -139,7 +175,7 @@ export default function Page() {
                 value={installationDate}
                 onChange={(e) => {
                   setInstallationDate(e.target.value);
-                  setLookup({ status: "idle" });
+                  resetLookup();
                 }}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
               />
@@ -172,7 +208,7 @@ export default function Page() {
                   onChange={(e) => {
                     setSelectedType(e.target.value as EquipmentType);
                     setSelectedSize("");
-                    setLookup({ status: "idle" });
+                    resetLookup();
                   }}
                   className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
                 >
@@ -192,7 +228,7 @@ export default function Page() {
                 value={selectedSize}
                 onChange={(e) => {
                   setSelectedSize(e.target.value);
-                  setLookup({ status: "idle" });
+                  resetLookup();
                 }}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
               >
@@ -209,7 +245,7 @@ export default function Page() {
           <div className="mt-6">
             {!selectedSize ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                Fais une sélection complète pour lancer la recherche en direct.
+                Faites une sélection complète pour lancer la recherche LogisVert.
               </div>
             ) : matchingOptions.length === 0 ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -230,7 +266,7 @@ export default function Page() {
                       onClick={() => {
                         setSelectedType(item.equipmentType);
                         setSelectedSize(item.sizeLabel);
-                        setLookup({ status: "idle" });
+                        resetLookup();
                       }}
                       className="w-full rounded-xl border border-amber-200 bg-white p-4 text-left transition hover:border-amber-400"
                     >
@@ -261,25 +297,69 @@ export default function Page() {
                   />
                 </div>
 
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold">
+                      Numéro AHRI du modèle
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedOption.ahri}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-base text-slate-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold">
+                      Nombre d’appareils installés
+                    </label>
+                    <div className="flex items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuantity((prev) => Math.max(1, prev - 1));
+                          resetLookup();
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 text-xl"
+                      >
+                        -
+                      </button>
+                      <div className="flex-1 text-center text-lg font-semibold">
+                        {quantity}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuantity((prev) => prev + 1);
+                          resetLookup();
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 text-xl"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleLiveLookup}
-                  className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white transition hover:bg-slate-800"
+                  className="mt-5 w-full rounded-xl bg-blue-700 px-4 py-3 text-base font-semibold text-white transition hover:bg-blue-800"
                 >
-                  Vérifier le montant actuel sur LogisVert
+                  Calculer l’aide financière
                 </button>
 
                 <div className="mt-4">
                   {lookup.status === "idle" && (
                     <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
-                      Aucun montant n’est affiché tant que la recherche en direct
-                      n’a pas été faite.
+                      Aucun montant n’est affiché tant que la recherche n’a pas été faite.
                     </div>
                   )}
 
                   {lookup.status === "loading" && (
                     <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                      Recherche en direct du montant actuel...
+                      Recherche du montant actuel sur LogisVert...
                     </div>
                   )}
 
@@ -292,11 +372,16 @@ export default function Page() {
                         {CURRENCY.format(lookup.amount)}
                       </h2>
                       <p className="mt-2 text-sm text-emerald-800">
-                        Montant trouvé en direct pour l’AHRI {selectedOption.ahri}
+                        Montant trouvé pour l’AHRI {selectedOption.ahri}
                       </p>
                       <p className="mt-1 text-xs text-emerald-700">
                         Date d’installation utilisée : {lookup.installationDate}
                       </p>
+                      {lookup.source ? (
+                        <p className="mt-1 text-xs text-emerald-700">
+                          Source : {lookup.source}
+                        </p>
+                      ) : null}
                     </div>
                   )}
 
@@ -307,9 +392,6 @@ export default function Page() {
                       </p>
                       <p className="mt-1 text-sm text-red-700">
                         {lookup.message}
-                      </p>
-                      <p className="mt-2 text-xs text-red-600">
-                        Aucun montant statique du PDF n’a été utilisé.
                       </p>
                     </div>
                   )}
@@ -334,4 +416,4 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   );
-                  }
+}
