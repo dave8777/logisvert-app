@@ -1,299 +1,381 @@
-import { NextRequest, NextResponse } from "next/server";
-import path from "path";
+type Category = "Wall Mount" | "Multi-Zone" | "Central";
+type Series = "CHARMO" | "CLIVIA" | "AIRY" | "MULTI" | "FLEXX";
+type CentralConfig = "Air Handler" | "Cased Coil";
 
-const executablePath = path.join(
-  process.cwd(),
-  "node_modules",
-  "playwright-core",
-  ".local-browsers",
-  "chromium",
-  "chrome-linux",
-  "chrome"
-);
-
-browser = await chromium.launch({
-  headless: true,
-  executablePath,
-  args: ["--no-sandbox", "--disable-setuid-sandbox"],
-});
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const maxDuration = 60;
-
-type LookupSuccess = {
-  ok: true;
+type SystemItem = {
+  id: string;
+  series: Series;
+  category: Category;
+  label: string;
+  btu: string;
+  outdoorUnit?: string;
+  indoorUnit?: string;
   ahri: string;
-  installationDate: string;
-  amount: number;
-  amountLabel: string;
-  rawText: string;
+  rebate: number;
+  centralConfig?: CentralConfig;
 };
 
-type LookupFailure = {
-  ok: false;
-  ahri: string;
-  installationDate: string;
-  error: string;
-};
+const systems: SystemItem[] = [
+  // WALL MOUNT
+  {
+    id: "charmo-12",
+    series: "CHARMO",
+    category: "Wall Mount",
+    label: "CHARMO 12k",
+    btu: "12000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "charmo-18",
+    series: "CHARMO",
+    category: "Wall Mount",
+    label: "CHARMO 18k",
+    btu: "18000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "charmo-24",
+    series: "CHARMO",
+    category: "Wall Mount",
+    label: "CHARMO 24k",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "charmo-36",
+    series: "CHARMO",
+    category: "Wall Mount",
+    label: "CHARMO 36k",
+    btu: "36000",
+    ahri: "",
+    rebate: 0,
+  },
 
-const LOGISVERT_URL =
-  "https://www.hydroquebec.com/residentiel/mieux-consommer/aides-financieres/logisvert/recherche-themopompes-efficaces.html";
+  {
+    id: "clivia-12",
+    series: "CLIVIA",
+    category: "Wall Mount",
+    label: "CLIVIA 12k",
+    btu: "12000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "clivia-18",
+    series: "CLIVIA",
+    category: "Wall Mount",
+    label: "CLIVIA 18k",
+    btu: "18000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "clivia-24",
+    series: "CLIVIA",
+    category: "Wall Mount",
+    label: "CLIVIA 24k",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
 
-function extractLikelyAmount(
-  rawText: string
-): { amount: number | null; amountLabel: string | null } {
-  const regex = /(\d{1,3}(?:[ \u00A0]\d{3})*(?:,\d{2})?)\s*\$/g;
-  const moneyMatches = Array.from(rawText.matchAll(regex));
+  {
+    id: "airy-12",
+    series: "AIRY",
+    category: "Wall Mount",
+    label: "AIRY 12k",
+    btu: "12000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "airy-18",
+    series: "AIRY",
+    category: "Wall Mount",
+    label: "AIRY 18k",
+    btu: "18000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "airy-24",
+    series: "AIRY",
+    category: "Wall Mount",
+    label: "AIRY 24k",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
 
-  if (moneyMatches.length === 0) {
-    return { amount: null, amountLabel: null };
-  }
+  // MULTI-ZONE
+  {
+    id: "multi-18-ductless",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 18k Sans conduits",
+    btu: "18000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-18-ducted",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 18k Avec conduits",
+    btu: "18000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-18-mix",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 18k Mix",
+    btu: "18000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-24-ductless",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 24k Sans conduits",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-24-ducted",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 24k Avec conduits",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-24-mix",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 24k Mix",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-30-ductless",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 30k Sans conduits",
+    btu: "30000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-30-ducted",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 30k Avec conduits",
+    btu: "30000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-30-mix",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 30k Mix",
+    btu: "30000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-36-ductless",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 36k Sans conduits",
+    btu: "36000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-36-ducted",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 36k Avec conduits",
+    btu: "36000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-36-mix",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 36k Mix",
+    btu: "36000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-42-ductless",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 42k Sans conduits",
+    btu: "42000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-42-ducted",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 42k Avec conduits",
+    btu: "42000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "multi-42-mix",
+    series: "MULTI",
+    category: "Multi-Zone",
+    label: "MULTI 42k Mix",
+    btu: "42000",
+    ahri: "",
+    rebate: 0,
+  },
 
-  const parsed = moneyMatches
-    .map((match) => {
-      const label = `${match[1]} $`;
-      const value = Number(
-        match[1]
-          .replace(/\u00A0/g, " ")
-          .replace(/\s/g, "")
-          .replace(",", ".")
-      );
+  // CENTRAL - AIR HANDLER
+  {
+    id: "flexx-ah-24",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Air Handler",
+    label: "FLEXX 24k",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "flexx-ah-36",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Air Handler",
+    label: "FLEXX 36k",
+    btu: "36000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "flexx-ah-48",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Air Handler",
+    label: "FLEXX 48k",
+    btu: "48000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "flexx-ah-60",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Air Handler",
+    label: "FLEXX 60k",
+    btu: "60000",
+    ahri: "",
+    rebate: 0,
+  },
 
-      return { label, value };
-    })
-    .filter((item) => Number.isFinite(item.value))
-    .sort((a, b) => b.value - a.value);
+  // CENTRAL - CASED COIL
+  {
+    id: "flexx-cc-24",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Cased Coil",
+    label: "FLEXX 24k",
+    btu: "24000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "flexx-cc-36",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Cased Coil",
+    label: "FLEXX 36k",
+    btu: "36000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "flexx-cc-48",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Cased Coil",
+    label: "FLEXX 48k",
+    btu: "48000",
+    ahri: "",
+    rebate: 0,
+  },
+  {
+    id: "flexx-cc-60",
+    series: "FLEXX",
+    category: "Central",
+    centralConfig: "Cased Coil",
+    label: "FLEXX 60k",
+    btu: "60000",
+    ahri: "",
+    rebate: 0,
+  },
+];
 
-  if (parsed.length === 0) {
-    return { amount: null, amountLabel: null };
-  }
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
 
-  return {
-    amount: parsed[0].value,
-    amountLabel: parsed[0].label,
-  };
-}
+  const id = searchParams.get("id");
+  const series = searchParams.get("series");
+  const category = searchParams.get("category");
+  const centralConfig = searchParams.get("centralConfig");
 
-async function tryDismissCookieBanner(page: any): Promise<void> {
-  const selectors = [
-    page.getByRole("button", { name: /accepter/i }),
-    page.getByRole("button", { name: /tout accepter/i }),
-    page.getByRole("button", { name: /j'accepte/i }),
-    page.getByRole("button", { name: /allow all/i }),
-  ];
+  let filtered = systems;
 
-  for (const locator of selectors) {
-    try {
-      const button = locator.first();
-      if (await button.isVisible({ timeout: 1200 })) {
-        await button.click({ timeout: 1200 });
-        return;
-      }
-    } catch {
-      // ignore
-    }
-  }
-}
+  if (id) {
+    const match = systems.find((item) => item.id === id);
 
-async function setInstallationCriteria(
-  page: any,
-  installationDate: string
-): Promise<void> {
-  try {
-    const dateInputs = page.locator(
-      'input[type="date"], input[placeholder*="date"], input[name*="date"], input[id*="date"]'
-    );
-    const count = await dateInputs.count();
-
-    if (count > 0) {
-      await dateInputs.first().fill(installationDate);
-    }
-  } catch {
-    // ignore if date field is not found
-  }
-
-  try {
-    const existingOwnerText = page
-      .getByText(/Propriétaire\s+Habitation existante/i)
-      .first();
-    await existingOwnerText.click({ timeout: 2500 });
-  } catch {
-    // ignore if already selected or not needed
-  }
-
-  const showListButton = page
-    .getByRole("button", { name: /Afficher la liste/i })
-    .first();
-
-  await showListButton.click({ timeout: 5000 });
-}
-
-async function searchByAhri(page: any, ahri: string): Promise<void> {
-  try {
-    await page
-      .getByText(/Numéro AHRI du modèle/i)
-      .first()
-      .click({ timeout: 3000 });
-  } catch {
-    // ignore if already visible
-  }
-
-  const inputs = page.locator(
-    'input[type="text"], input[type="search"], input[inputmode="numeric"]'
-  );
-  const inputCount = await inputs.count();
-
-  if (inputCount === 0) {
-    throw new Error(
-      "Impossible de trouver le champ de recherche AHRI sur la page LogisVert."
-    );
-  }
-
-  let filled = false;
-
-  for (let i = 0; i < inputCount; i += 1) {
-    const input = inputs.nth(i);
-
-    try {
-      await input.fill(ahri, { timeout: 1500 });
-      const value = await input.inputValue();
-
-      if (value === ahri) {
-        filled = true;
-        break;
-      }
-    } catch {
-      // try next field
-    }
-  }
-
-  if (!filled) {
-    throw new Error(
-      "Impossible de remplir le champ AHRI sur la page LogisVert."
-    );
-  }
-
-  const searchButton = page
-    .getByRole("button", { name: /Rechercher ce numéro/i })
-    .first();
-
-  await searchButton.click({ timeout: 5000 });
-}
-
-export async function GET(req: NextRequest) {
-  const ahri = req.nextUrl.searchParams.get("ahri")?.trim() || "";
-  const installationDate =
-    req.nextUrl.searchParams.get("installationDate")?.trim() ||
-    new Date().toISOString().slice(0, 10);
-
-  if (!ahri) {
-    return NextResponse.json<LookupFailure>(
-      {
-        ok: false,
-        ahri: "",
-        installationDate,
-        error: "Numéro AHRI manquant.",
-      },
-      { status: 400 }
-    );
-  }
-
-  let browser: any = null;
-
-  try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const page = await browser.newPage({
-      locale: "fr-CA",
-      userAgent:
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari",
-    });
-
-    await page.goto(LOGISVERT_URL, {
-      waitUntil: "domcontentloaded",
-      timeout: 45000,
-    });
-
-    await tryDismissCookieBanner(page);
-
-    await page.getByText(/Outil de recherche de thermopompes/i).waitFor({
-      timeout: 15000,
-    });
-
-    await setInstallationCriteria(page, installationDate);
-    await searchByAhri(page, ahri);
-
-    try {
-      await page.waitForLoadState("networkidle", { timeout: 15000 });
-    } catch {
-      // continue
-    }
-
-    await page.waitForTimeout(1500);
-
-    const bodyText = await page.locator("body").innerText();
-
-    if (/Aucun résultat|aucune thermopompe|introuvable/i.test(bodyText)) {
-      return NextResponse.json<LookupFailure>(
-        {
-          ok: false,
-          ahri,
-          installationDate,
-          error: `Aucun résultat admissible trouvé pour l'AHRI ${ahri} dans l'outil LogisVert.`,
-        },
+    if (!match) {
+      return Response.json(
+        { error: "System not found" },
         { status: 404 }
       );
     }
 
-    const extracted = extractLikelyAmount(bodyText);
-
-    if (extracted.amount == null || extracted.amountLabel == null) {
-      return NextResponse.json<LookupFailure>(
-        {
-          ok: false,
-          ahri,
-          installationDate,
-          error:
-            "La page LogisVert a répondu, mais le montant d'aide financière n'a pas pu être extrait.",
-        },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json<LookupSuccess>({
-      ok: true,
-      ahri,
-      installationDate,
-      amount: extracted.amount,
-      amountLabel: extracted.amountLabel,
-      rawText: bodyText.slice(0, 4000),
+    return Response.json({
+      updated: new Date().toISOString().slice(0, 10),
+      count: 1,
+      system: match,
     });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Erreur inconnue durant la recherche LogisVert.";
-
-    return NextResponse.json<LookupFailure>(
-      {
-        ok: false,
-        ahri,
-        installationDate,
-        error: `Échec de la lecture en direct de LogisVert: ${message}`,
-      },
-      { status: 502 }
-    );
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        // ignore
-      }
-    }
   }
+
+  if (series) {
+    filtered = filtered.filter((item) => item.series === series);
+  }
+
+  if (category) {
+    filtered = filtered.filter((item) => item.category === category);
+  }
+
+  if (centralConfig) {
+    filtered = filtered.filter(
+      (item) => item.centralConfig === centralConfig
+    );
+  }
+
+  return Response.json({
+    updated: new Date().toISOString().slice(0, 10),
+    count: filtered.length,
+    systems: filtered,
+  });
 }
