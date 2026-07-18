@@ -1,63 +1,110 @@
 import { GREE_OPTIONS } from "./gree-options";
 
-// Taux de taxes du Québec
+// Quebec sales tax rates
 export const TAX_RATES = {
-  tps: 0.05, // TPS 5 %
-  tvq: 0.09975, // TVQ 9,975 %
+  gst: 0.05, // GST 5%
+  qst: 0.09975, // QST 9.975%
 } as const;
 
 export type WallMountLine = "Charmo" | "Clivia" | "Airy";
-export type WallMountSize = "12k" | "18k" | "24k" | "36k";
+export type WallMountSize = "9k" | "12k" | "18k" | "24k" | "36k";
+export type MultiZoneType = "Ductless" | "Ducted" | "Mix";
+export type MultiZoneSize = "18k" | "24k" | "30k" | "36k" | "42k";
 
 export const WALL_MOUNT_LINES: WallMountLine[] = ["Charmo", "Clivia", "Airy"];
-export const WALL_MOUNT_SIZES: WallMountSize[] = ["12k", "18k", "24k", "36k"];
+export const WALL_MOUNT_SIZES: WallMountSize[] = [
+  "9k",
+  "12k",
+  "18k",
+  "24k",
+  "36k",
+];
+export const MULTI_ZONE_TYPES: MultiZoneType[] = ["Ductless", "Ducted", "Mix"];
+export const MULTI_ZONE_SIZES: MultiZoneSize[] = [
+  "18k",
+  "24k",
+  "30k",
+  "36k",
+  "42k",
+];
 
-export type WallMountPricing = {
-  /** Prix de vente installé AVANT taxes ($ CAD) */
+export type Pricing = {
+  /** Installed selling price BEFORE taxes ($ CAD) */
   priceBeforeTax: number;
-  /** Subvention LogisVert ($ CAD) */
+  /** LogisVert subsidy amount ($ CAD) */
   subsidy: number;
 };
 
 // ==================================================================
-// ⚠️  VOS PRIX — MODIFIEZ LES MONTANTS ICI ⚠️
+// ⚠️  YOUR PRICES — EDIT THE AMOUNTS HERE ⚠️
 //
-// priceBeforeTax : prix de vente installé AVANT taxes ($ CAD).
-//                  Les taxes (TPS + TVQ) sont ajoutées automatiquement.
-// subsidy        : subvention LogisVert pour ce modèle ($ CAD).
+// priceBeforeTax : installed selling price BEFORE taxes ($ CAD).
+//                  Taxes (GST + QST) are added automatically.
+// subsidy        : LogisVert subsidy for this model ($ CAD).
 //
-// Les montants ci-dessous sont des EXEMPLES à remplacer par vos
-// vrais prix et les vrais montants LogisVert.
+// The amounts below are EXAMPLES — replace them with your real
+// prices and the real LogisVert amounts.
 // ==================================================================
 export const WALL_MOUNT_PRICES: Record<
   WallMountLine,
-  Partial<Record<WallMountSize, WallMountPricing>>
+  Partial<Record<WallMountSize, Pricing>>
 > = {
   Charmo: {
+    "9k": { priceBeforeTax: 3295, subsidy: 900 },
     "12k": { priceBeforeTax: 3495, subsidy: 1000 },
     "18k": { priceBeforeTax: 4295, subsidy: 1300 },
     "24k": { priceBeforeTax: 4995, subsidy: 1700 },
     "36k": { priceBeforeTax: 6495, subsidy: 2000 },
   },
   Clivia: {
+    "9k": { priceBeforeTax: 3695, subsidy: 900 },
     "12k": { priceBeforeTax: 3895, subsidy: 1000 },
     "18k": { priceBeforeTax: 4695, subsidy: 1300 },
     "24k": { priceBeforeTax: 5395, subsidy: 1700 },
   },
   Airy: {
+    "9k": { priceBeforeTax: 4095, subsidy: 900 },
     "12k": { priceBeforeTax: 4295, subsidy: 1000 },
     "18k": { priceBeforeTax: 5095, subsidy: 1300 },
   },
 };
 
+export const MULTI_ZONE_PRICES: Record<
+  MultiZoneType,
+  Partial<Record<MultiZoneSize, Pricing>>
+> = {
+  Ductless: {
+    "18k": { priceBeforeTax: 6995, subsidy: 1300 },
+    "24k": { priceBeforeTax: 7995, subsidy: 1700 },
+    "30k": { priceBeforeTax: 8995, subsidy: 1800 },
+    "36k": { priceBeforeTax: 9995, subsidy: 2000 },
+    "42k": { priceBeforeTax: 10995, subsidy: 2200 },
+  },
+  Ducted: {
+    "18k": { priceBeforeTax: 7495, subsidy: 1300 },
+    "24k": { priceBeforeTax: 8495, subsidy: 1700 },
+    "30k": { priceBeforeTax: 9495, subsidy: 1800 },
+    "36k": { priceBeforeTax: 10495, subsidy: 2000 },
+    "42k": { priceBeforeTax: 11495, subsidy: 2200 },
+  },
+  Mix: {
+    "18k": { priceBeforeTax: 7245, subsidy: 1300 },
+    "24k": { priceBeforeTax: 8245, subsidy: 1700 },
+    "30k": { priceBeforeTax: 9245, subsidy: 1800 },
+    "36k": { priceBeforeTax: 10245, subsidy: 2000 },
+    "42k": { priceBeforeTax: 11245, subsidy: 2200 },
+  },
+};
+
 export type Quote = {
-  line: WallMountLine;
-  size: WallMountSize;
+  /** Product line (wall mount) or system type (multi-zone) */
+  name: string;
+  size: string;
   ahri: string;
   quantity: number;
   priceBeforeTax: number;
-  tps: number;
-  tvq: number;
+  gst: number;
+  qst: number;
   priceWithTax: number;
   subsidy: number;
   finalPrice: number;
@@ -67,12 +114,39 @@ function roundCents(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function computeQuote(
+  pricing: Pricing,
+  name: string,
+  size: string,
+  ahri: string,
+  quantity: number
+): Quote {
+  const priceBeforeTax = roundCents(pricing.priceBeforeTax * quantity);
+  const gst = roundCents(priceBeforeTax * TAX_RATES.gst);
+  const qst = roundCents(priceBeforeTax * TAX_RATES.qst);
+  const priceWithTax = roundCents(priceBeforeTax + gst + qst);
+  const subsidy = roundCents(pricing.subsidy * quantity);
+  const finalPrice = roundCents(priceWithTax - subsidy);
+
+  return {
+    name,
+    size,
+    ahri,
+    quantity,
+    priceBeforeTax,
+    gst,
+    qst,
+    priceWithTax,
+    subsidy,
+    finalPrice,
+  };
+}
+
 /**
- * Calcule la soumission complète pour une gamme, une capacité et une
- * quantité : prix taxes incluses, subvention et prix final.
- * Retourne null si la gamme n'offre pas cette capacité en murale.
+ * Full quote for a wall-mounted unit: price taxes included, subsidy and
+ * final price. Returns null when the line does not offer that capacity.
  */
-export function getQuote(
+export function getWallMountQuote(
   line: WallMountLine,
   size: WallMountSize,
   quantity: number
@@ -83,27 +157,31 @@ export function getQuote(
   const option = GREE_OPTIONS.find(
     (item) =>
       item.line === line &&
-      item.equipmentType === "Murale" &&
+      item.equipmentType === "Wall Mount" &&
       item.sizeLabel === size
   );
 
-  const priceBeforeTax = roundCents(pricing.priceBeforeTax * quantity);
-  const tps = roundCents(priceBeforeTax * TAX_RATES.tps);
-  const tvq = roundCents(priceBeforeTax * TAX_RATES.tvq);
-  const priceWithTax = roundCents(priceBeforeTax + tps + tvq);
-  const subsidy = roundCents(pricing.subsidy * quantity);
-  const finalPrice = roundCents(priceWithTax - subsidy);
+  return computeQuote(pricing, line, size, option?.ahri ?? "", quantity);
+}
 
-  return {
-    line,
-    size,
-    ahri: option?.ahri ?? "",
-    quantity,
-    priceBeforeTax,
-    tps,
-    tvq,
-    priceWithTax,
-    subsidy,
-    finalPrice,
-  };
+/**
+ * Full quote for a multi-zone system (ductless, ducted or mixed indoor
+ * units). Returns null when that combination is not offered.
+ */
+export function getMultiZoneQuote(
+  type: MultiZoneType,
+  size: MultiZoneSize,
+  quantity: number
+): Quote | null {
+  const pricing = MULTI_ZONE_PRICES[type][size];
+  if (!pricing) return null;
+
+  const option = GREE_OPTIONS.find(
+    (item) =>
+      item.line === "Multizone" &&
+      item.equipmentType === type &&
+      item.sizeLabel === size
+  );
+
+  return computeQuote(pricing, type, size, option?.ahri ?? "", quantity);
 }

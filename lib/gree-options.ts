@@ -7,12 +7,11 @@ export type ProductLine =
   | "Flexx Add-On";
 
 export type EquipmentType =
-  | "Murale"
+  | "Wall Mount"
   | "Cassette"
   | "Console"
-  | "Gainable"
-  | "Sans conduits"
-  | "Avec conduits"
+  | "Ducted"
+  | "Ductless"
   | "Mix"
   | "Air Handler"
   | "Cased Coil";
@@ -32,7 +31,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "airy-murale-12",
     line: "Airy",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "12k",
     outdoorUnit: "GREGWH12AVDXED6DNA1O",
     indoorUnit: "GREGWH12AVDXED6DNA1I",
@@ -41,7 +40,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "airy-murale-18",
     line: "Airy",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "18k",
     outdoorUnit: "GREGWH18AVEXFD6DNA1O",
     indoorUnit: "GREGWH18AVEXFD6DNA1I",
@@ -68,7 +67,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "airy-gainable-12",
     line: "Airy",
-    equipmentType: "Gainable",
+    equipmentType: "Ducted",
     sizeLabel: "12k",
     outdoorUnit: "GREGWH12AVDXED6DNA1O",
     indoorUnit: "GREGFH12DAD6DNA1AI",
@@ -79,7 +78,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "clivia-murale-12",
     line: "Clivia",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "12k",
     outdoorUnit: "GREGWH12AGCXDD6DNA4O",
     indoorUnit: "GREGWH12AUCXDD6DNA2I",
@@ -88,7 +87,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "clivia-murale-18",
     line: "Clivia",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "18k",
     outdoorUnit: "GREGWH18AGDXFD6DNA4O",
     indoorUnit: "GREGWH18AUDXFD6DNA2I",
@@ -97,7 +96,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "clivia-murale-24",
     line: "Clivia",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "24k",
     outdoorUnit: "GREGWH24AGEXFD6DNA4O",
     indoorUnit: "GREGWH24AUDXFD6DNA2I",
@@ -124,7 +123,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "clivia-gainable-12",
     line: "Clivia",
-    equipmentType: "Gainable",
+    equipmentType: "Ducted",
     sizeLabel: "12k",
     outdoorUnit: "GREGWH12AGCXDD6DNA4O",
     indoorUnit: "GREGFH12DAD6DNA1AI",
@@ -133,7 +132,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "clivia-gainable-18",
     line: "Clivia",
-    equipmentType: "Gainable",
+    equipmentType: "Ducted",
     sizeLabel: "18k",
     outdoorUnit: "GREGWH18AGDXFD6DNA4O",
     indoorUnit: "GREGFH18DBD6DNA1AI",
@@ -142,7 +141,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "clivia-gainable-24",
     line: "Clivia",
-    equipmentType: "Gainable",
+    equipmentType: "Ducted",
     sizeLabel: "24k",
     outdoorUnit: "GREGWH24AGEXFD6DNA4O",
     indoorUnit: "GREGFH24DBD6DNA1AI",
@@ -153,7 +152,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "charmo-murale-12",
     line: "Charmo",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "12k",
     outdoorUnit: "GREGWH12ATCXBD6DNA4O",
     indoorUnit: "GREGWH12ATCXBD6DNA4I",
@@ -162,7 +161,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "charmo-murale-18",
     line: "Charmo",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "18k",
     outdoorUnit: "GREGWH18ATDXDD6DNA4O",
     indoorUnit: "GREGWH18ATDXDD6DNA4I",
@@ -171,7 +170,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "charmo-murale-24",
     line: "Charmo",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "24k",
     outdoorUnit: "GREGWH24ATEXFD6DNA4O",
     indoorUnit: "GREGWH24ATEXFD6DNA4I",
@@ -180,7 +179,7 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "charmo-murale-36",
     line: "Charmo",
-    equipmentType: "Murale",
+    equipmentType: "Wall Mount",
     sizeLabel: "36k",
     outdoorUnit: "GREGWH36ATEXHD6DNA1O",
     indoorUnit: "GREGWH36ATEXHD6DNA1I",
@@ -191,19 +190,19 @@ export const GREE_OPTIONS: GreeOption[] = [
   {
     id: "multizone-18-sans",
     line: "Multizone",
-    equipmentType: "Sans conduits",
+    equipmentType: "Ductless",
     sizeLabel: "18k",
     outdoorUnit: "GREGWHD18ND6MO",
-    indoorUnit: "Appareils sans conduits",
+    indoorUnit: "Ductless indoor units",
     ahri: "214931586",
   },
   {
     id: "multizone-18-avec",
     line: "Multizone",
-    equipmentType: "Avec conduits",
+    equipmentType: "Ducted",
     sizeLabel: "18k",
     outdoorUnit: "GREGWHD18ND6MO",
-    indoorUnit: "Appareils avec conduits",
+    indoorUnit: "Ducted indoor units",
     ahri: "214931591",
   },
   {
@@ -212,25 +211,25 @@ export const GREE_OPTIONS: GreeOption[] = [
     equipmentType: "Mix",
     sizeLabel: "18k",
     outdoorUnit: "GREGWHD18ND6MO",
-    indoorUnit: "Appareils mix",
+    indoorUnit: "Mixed indoor units",
     ahri: "214931592",
   },
   {
     id: "multizone-24-sans",
     line: "Multizone",
-    equipmentType: "Sans conduits",
+    equipmentType: "Ductless",
     sizeLabel: "24k",
     outdoorUnit: "GREGWHD24ND6MO",
-    indoorUnit: "Appareils sans conduits",
+    indoorUnit: "Ductless indoor units",
     ahri: "214931587",
   },
   {
     id: "multizone-24-avec",
     line: "Multizone",
-    equipmentType: "Avec conduits",
+    equipmentType: "Ducted",
     sizeLabel: "24k",
     outdoorUnit: "GREGWHD24ND6MO",
-    indoorUnit: "Appareils avec conduits",
+    indoorUnit: "Ducted indoor units",
     ahri: "214931593",
   },
   {
@@ -239,25 +238,25 @@ export const GREE_OPTIONS: GreeOption[] = [
     equipmentType: "Mix",
     sizeLabel: "24k",
     outdoorUnit: "GREGWHD24ND6MO",
-    indoorUnit: "Appareils mix",
+    indoorUnit: "Mixed indoor units",
     ahri: "214931597",
   },
   {
     id: "multizone-30-sans",
     line: "Multizone",
-    equipmentType: "Sans conduits",
+    equipmentType: "Ductless",
     sizeLabel: "30k",
     outdoorUnit: "GREGWHD30ND6MO",
-    indoorUnit: "Appareils sans conduits",
+    indoorUnit: "Ductless indoor units",
     ahri: "214931588",
   },
   {
     id: "multizone-30-avec",
     line: "Multizone",
-    equipmentType: "Avec conduits",
+    equipmentType: "Ducted",
     sizeLabel: "30k",
     outdoorUnit: "GREGWHD30ND6MO",
-    indoorUnit: "Appareils avec conduits",
+    indoorUnit: "Ducted indoor units",
     ahri: "214931594",
   },
   {
@@ -266,25 +265,25 @@ export const GREE_OPTIONS: GreeOption[] = [
     equipmentType: "Mix",
     sizeLabel: "30k",
     outdoorUnit: "GREGWHD30ND6MO",
-    indoorUnit: "Appareils mix",
+    indoorUnit: "Mixed indoor units",
     ahri: "214931598",
   },
   {
     id: "multizone-36-sans",
     line: "Multizone",
-    equipmentType: "Sans conduits",
+    equipmentType: "Ductless",
     sizeLabel: "36k",
     outdoorUnit: "GREGWHD36ND6MO",
-    indoorUnit: "Appareils sans conduits",
+    indoorUnit: "Ductless indoor units",
     ahri: "214931589",
   },
   {
     id: "multizone-36-avec",
     line: "Multizone",
-    equipmentType: "Avec conduits",
+    equipmentType: "Ducted",
     sizeLabel: "36k",
     outdoorUnit: "GREGWHD36ND6MO",
-    indoorUnit: "Appareils avec conduits",
+    indoorUnit: "Ducted indoor units",
     ahri: "214931595",
   },
   {
@@ -293,25 +292,25 @@ export const GREE_OPTIONS: GreeOption[] = [
     equipmentType: "Mix",
     sizeLabel: "36k",
     outdoorUnit: "GREGWHD36ND6MO",
-    indoorUnit: "Appareils mix",
+    indoorUnit: "Mixed indoor units",
     ahri: "214931599",
   },
   {
     id: "multizone-42-sans",
     line: "Multizone",
-    equipmentType: "Sans conduits",
+    equipmentType: "Ductless",
     sizeLabel: "42k",
     outdoorUnit: "GREGWHD42ND6MO",
-    indoorUnit: "Appareils sans conduits",
+    indoorUnit: "Ductless indoor units",
     ahri: "214931590",
   },
   {
     id: "multizone-42-avec",
     line: "Multizone",
-    equipmentType: "Avec conduits",
+    equipmentType: "Ducted",
     sizeLabel: "42k",
     outdoorUnit: "GREGWHD42ND6MO",
-    indoorUnit: "Appareils avec conduits",
+    indoorUnit: "Ducted indoor units",
     ahri: "214931596",
   },
   {
@@ -320,7 +319,7 @@ export const GREE_OPTIONS: GreeOption[] = [
     equipmentType: "Mix",
     sizeLabel: "42k",
     outdoorUnit: "GREGWHD42ND6MO",
-    indoorUnit: "Appareils mix",
+    indoorUnit: "Mixed indoor units",
     ahri: "214931600",
   },
 

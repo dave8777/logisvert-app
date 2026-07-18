@@ -11,8 +11,8 @@ import {
 } from "../../lib/gree-options";
 
 type InstallationType =
-  | "Remplacement d’une thermopompe existante"
-  | "Nouvelle installation";
+  | "Replacement of an existing heat pump"
+  | "New installation";
 
 type LookupState =
   | { status: "idle" }
@@ -29,7 +29,7 @@ type LookupState =
       message: string;
     };
 
-const CURRENCY = new Intl.NumberFormat("fr-CA", {
+const CURRENCY = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
   maximumFractionDigits: 0,
@@ -43,7 +43,7 @@ export default function Page() {
     new Date().toISOString().slice(0, 10)
   );
   const [installationType, setInstallationType] =
-    useState<InstallationType>("Remplacement d’une thermopompe existante");
+    useState<InstallationType>("Replacement of an existing heat pump");
   const [quantity, setQuantity] = useState(1);
   const [lookup, setLookup] = useState<LookupState>({ status: "idle" });
 
@@ -111,7 +111,7 @@ export default function Page() {
 
       if (!res.ok || !data.ok) {
         throw new Error(
-          data?.error || "Impossible de récupérer le montant actuel de LogisVert."
+          data?.error || "Unable to retrieve the current LogisVert amount."
         );
       }
 
@@ -128,7 +128,7 @@ export default function Page() {
         message:
           error instanceof Error
             ? error.message
-            : "Échec de la recherche en direct sur LogisVert.",
+            : "The live LogisVert lookup failed.",
       });
     }
   }
@@ -141,14 +141,14 @@ export default function Page() {
             href="/"
             className="text-sm font-semibold text-blue-700 hover:underline"
           >
-            ← Retour aux prix de vente
+            ← Back to sales pricing
           </Link>
           <h1 className="mt-2 text-2xl font-bold md:text-3xl">
-            Calculateur Subvention Gree
+            Gree Subsidy Calculator
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Choisissez votre unité dans vos propres listes. Le numéro AHRI est
-            inséré automatiquement puis envoyé à la recherche LogisVert.
+            Pick your unit from your own lists. The AHRI number is filled in
+            automatically and sent to the LogisVert lookup.
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export default function Page() {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-semibold">
-                Type d’installation
+                Installation type
               </label>
               <select
                 value={installationType}
@@ -166,16 +166,16 @@ export default function Page() {
                 }}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
               >
-                <option value="Remplacement d’une thermopompe existante">
-                  Remplacement d’une thermopompe existante
+                <option value="Replacement of an existing heat pump">
+                  Replacement of an existing heat pump
                 </option>
-                <option value="Nouvelle installation">Nouvelle installation</option>
+                <option value="New installation">New installation</option>
               </select>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-semibold">
-                Date d’installation
+                Installation date
               </label>
               <input
                 type="date"
@@ -190,7 +190,7 @@ export default function Page() {
 
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-semibold">
-                Gamme de produit
+                Product line
               </label>
               <select
                 value={selectedLine}
@@ -208,7 +208,7 @@ export default function Page() {
             {showTypeDropdown && (
               <div>
                 <label className="mb-2 block text-sm font-semibold">
-                  Type d’équipement
+                  Equipment type
                 </label>
                 <select
                   value={selectedType}
@@ -219,7 +219,7 @@ export default function Page() {
                   }}
                   className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
                 >
-                  <option value="">Choisir</option>
+                  <option value="">Choose</option>
                   {equipmentTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
@@ -230,7 +230,7 @@ export default function Page() {
             )}
 
             <div>
-              <label className="mb-2 block text-sm font-semibold">Capacité</label>
+              <label className="mb-2 block text-sm font-semibold">Capacity</label>
               <select
                 value={selectedSize}
                 onChange={(e) => {
@@ -239,7 +239,7 @@ export default function Page() {
                 }}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
               >
-                <option value="">Choisir</option>
+                <option value="">Choose</option>
                 {sizeOptions.map((size) => (
                   <option key={size} value={size}>
                     {size}
@@ -252,18 +252,18 @@ export default function Page() {
           <div className="mt-6">
             {!selectedSize ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                Faites une sélection complète pour lancer la recherche LogisVert.
+                Complete your selection to run the LogisVert lookup.
               </div>
             ) : matchingOptions.length === 0 ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
                 <p className="font-semibold text-red-700">
-                  Aucun modèle Gree correspondant trouvé
+                  No matching Gree model found
                 </p>
               </div>
             ) : matchingOptions.length > 1 && !selectedOption ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                 <p className="font-semibold text-amber-800">
-                  Plusieurs combinaisons possibles
+                  Several possible combinations
                 </p>
                 <div className="mt-4 space-y-3">
                   {matchingOptions.map((item) => (
@@ -290,16 +290,16 @@ export default function Page() {
             ) : selectedOption ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <InfoCard label="Gamme" value={selectedOption.line} />
+                  <InfoCard label="Line" value={selectedOption.line} />
                   <InfoCard label="Type" value={selectedOption.equipmentType} />
-                  <InfoCard label="Capacité" value={selectedOption.sizeLabel} />
+                  <InfoCard label="Capacity" value={selectedOption.sizeLabel} />
                   <InfoCard label="AHRI" value={selectedOption.ahri} />
                   <InfoCard
-                    label="Unité extérieure"
+                    label="Outdoor unit"
                     value={selectedOption.outdoorUnit}
                   />
                   <InfoCard
-                    label="Unité intérieure"
+                    label="Indoor unit"
                     value={selectedOption.indoorUnit}
                   />
                 </div>
@@ -307,7 +307,7 @@ export default function Page() {
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm font-semibold">
-                      Numéro AHRI du modèle
+                      Model AHRI number
                     </label>
                     <input
                       type="text"
@@ -319,7 +319,7 @@ export default function Page() {
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold">
-                      Nombre d’appareils installés
+                      Number of units installed
                     </label>
                     <div className="flex items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 py-2">
                       <button
@@ -354,39 +354,39 @@ export default function Page() {
                   onClick={handleLiveLookup}
                   className="mt-5 w-full rounded-xl bg-blue-700 px-4 py-3 text-base font-semibold text-white transition hover:bg-blue-800"
                 >
-                  Calculer l’aide financière
+                  Calculate the subsidy
                 </button>
 
                 <div className="mt-4">
                   {lookup.status === "idle" && (
                     <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
-                      Aucun montant n’est affiché tant que la recherche n’a pas été faite.
+                      No amount is shown until the lookup has been run.
                     </div>
                   )}
 
                   {lookup.status === "loading" && (
                     <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                      Recherche du montant actuel sur LogisVert...
+                      Looking up the current amount on LogisVert...
                     </div>
                   )}
 
                   {lookup.status === "success" && (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
                       <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                        Aide financière actuelle
+                        Current subsidy
                       </p>
                       <h2 className="mt-1 text-3xl font-bold text-emerald-900">
                         {CURRENCY.format(lookup.amount)}
                       </h2>
                       <p className="mt-2 text-sm text-emerald-800">
-                        Montant trouvé pour l’AHRI {selectedOption.ahri}
+                        Amount found for AHRI {selectedOption.ahri}
                       </p>
                       <p className="mt-1 text-xs text-emerald-700">
-                        Date d’installation utilisée : {lookup.installationDate}
+                        Installation date used: {lookup.installationDate}
                       </p>
                       {lookup.source ? (
                         <p className="mt-1 text-xs text-emerald-700">
-                          Source : {lookup.source}
+                          Source: {lookup.source}
                         </p>
                       ) : null}
                     </div>
@@ -395,7 +395,7 @@ export default function Page() {
                   {lookup.status === "error" && (
                     <div className="rounded-xl border border-red-200 bg-red-50 p-4">
                       <p className="font-semibold text-red-700">
-                        Impossible de lire LogisVert en direct
+                        Unable to read LogisVert live
                       </p>
                       <p className="mt-1 text-sm text-red-700">
                         {lookup.message}

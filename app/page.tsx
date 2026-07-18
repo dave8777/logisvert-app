@@ -3,23 +3,63 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  MULTI_ZONE_SIZES,
+  MULTI_ZONE_TYPES,
   WALL_MOUNT_LINES,
   WALL_MOUNT_SIZES,
-  getQuote,
+  getMultiZoneQuote,
+  getWallMountQuote,
+  type MultiZoneSize,
   type Quote,
   type WallMountSize,
 } from "../lib/pricing";
 
-const CURRENCY = new Intl.NumberFormat("fr-CA", {
+const CURRENCY = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
+type Category = "Wall Mount" | "Multi-Zone";
+
+const CATEGORIES: Category[] = ["Wall Mount", "Multi-Zone"];
+
+function formatBtu(size: string): string {
+  const thousands = Number(size.replace("k", ""));
+  return `${(thousands * 1000).toLocaleString("en-CA")} BTU`;
+}
+
 export default function Page() {
-  const [selectedSize, setSelectedSize] = useState<WallMountSize>("12k");
+  const [category, setCategory] = useState<Category>("Wall Mount");
+  const [wallSize, setWallSize] = useState<WallMountSize>("12k");
+  const [multiSize, setMultiSize] = useState<MultiZoneSize>("24k");
   const [quantity, setQuantity] = useState(1);
+
+  const sizes: string[] =
+    category === "Wall Mount" ? WALL_MOUNT_SIZES : MULTI_ZONE_SIZES;
+  const selectedSize = category === "Wall Mount" ? wallSize : multiSize;
+
+  function handleSizeChange(size: string) {
+    if (category === "Wall Mount") {
+      setWallSize(size as WallMountSize);
+    } else {
+      setMultiSize(size as MultiZoneSize);
+    }
+  }
+
+  const columns =
+    category === "Wall Mount"
+      ? WALL_MOUNT_LINES.map((line) => ({
+          key: line,
+          label: line,
+          quote: getWallMountQuote(line, wallSize, quantity),
+        }))
+      : MULTI_ZONE_TYPES.map((type) => ({
+          key: type,
+          label: type,
+          quote: getMultiZoneQuote(type, multiSize, quantity),
+        }));
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
@@ -28,41 +68,41 @@ export default function Page() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold md:text-3xl">
-                Thermopompes murales — Prix de vente
+                Heat Pumps — Sales Pricing
               </h1>
               <p className="mt-2 text-sm text-slate-600">
-                Choisissez la capacité pour comparer les trois gammes murales :
-                prix taxes incluses, subvention LogisVert et prix final.
+                Pick a category and capacity to compare options: price with
+                taxes included, LogisVert subsidy, and final price.
               </p>
             </div>
             <Link
               href="/calculateur"
               className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-400"
             >
-              Recherche AHRI / LogisVert →
+              AHRI / LogisVert lookup →
             </Link>
           </div>
         </div>
 
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm font-semibold">
-                Capacité
+                Category
               </label>
               <div className="flex flex-wrap gap-2">
-                {WALL_MOUNT_SIZES.map((size) => (
+                {CATEGORIES.map((item) => (
                   <button
-                    key={size}
+                    key={item}
                     type="button"
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => setCategory(item)}
                     className={`rounded-xl border px-5 py-3 text-base font-semibold transition ${
-                      selectedSize === size
+                      category === item
                         ? "border-blue-700 bg-blue-700 text-white"
                         : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
                     }`}
                   >
-                    {size.replace("k", " 000")} BTU
+                    {item}
                   </button>
                 ))}
               </div>
@@ -70,7 +110,29 @@ export default function Page() {
 
             <div>
               <label className="mb-2 block text-sm font-semibold">
-                Nombre d’appareils
+                Capacity
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => handleSizeChange(size)}
+                    className={`rounded-xl border px-4 py-3 text-base font-semibold transition ${
+                      selectedSize === size
+                        ? "border-blue-700 bg-blue-700 text-white"
+                        : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
+                    }`}
+                  >
+                    {formatBtu(size)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Number of units
               </label>
               <div className="flex max-w-xs items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 py-2">
                 <button
@@ -96,50 +158,55 @@ export default function Page() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {WALL_MOUNT_LINES.map((line) => {
-            const quote = getQuote(line, selectedSize, quantity);
-            return quote ? (
-              <PriceCard key={line} quote={quote} />
+          {columns.map(({ key, label, quote }) =>
+            quote ? (
+              <PriceCard key={key} quote={quote} category={category} />
             ) : (
               <div
-                key={line}
+                key={key}
                 className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center"
               >
-                <div className="text-lg font-bold text-slate-400">{line}</div>
+                <div className="text-lg font-bold text-slate-400">{label}</div>
                 <p className="mt-2 text-sm text-slate-500">
-                  Non offert en {selectedSize.replace("k", " 000")} BTU murale
+                  Not available in {formatBtu(selectedSize)}
                 </p>
               </div>
-            );
-          })}
+            )
+          )}
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Prix taxes incluses (TPS 5 % + TVQ 9,975 %). La subvention LogisVert
-          est déduite du total taxes incluses.
+          Prices include taxes (GST 5% + QST 9.975%). The LogisVert subsidy is
+          deducted from the tax-included total.
         </p>
       </div>
     </main>
   );
 }
 
-function PriceCard({ quote }: { quote: Quote }) {
+function PriceCard({
+  quote,
+  category,
+}: {
+  quote: Quote;
+  category: Category;
+}) {
   return (
     <div className="flex flex-col rounded-2xl bg-white p-5 shadow-sm">
       <div className="border-b border-slate-200 pb-4">
-        <h2 className="text-xl font-bold">{quote.line}</h2>
+        <h2 className="text-xl font-bold">{quote.name}</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Murale {quote.size.replace("k", " 000")} BTU
+          {category} {formatBtu(quote.size)}
           {quote.quantity > 1 ? ` × ${quote.quantity}` : ""}
         </p>
         {quote.ahri ? (
-          <p className="mt-1 text-xs text-slate-500">AHRI : {quote.ahri}</p>
+          <p className="mt-1 text-xs text-slate-500">AHRI: {quote.ahri}</p>
         ) : null}
       </div>
 
       <div className="mt-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Prix taxes incluses
+          Price with taxes
         </p>
         <p className="mt-1 text-3xl font-bold">
           {CURRENCY.format(quote.priceWithTax)}
@@ -148,23 +215,23 @@ function PriceCard({ quote }: { quote: Quote }) {
 
       <div className="mt-3 space-y-1 text-xs text-slate-500">
         <div className="flex justify-between">
-          <span>Prix avant taxes</span>
+          <span>Price before taxes</span>
           <span>{CURRENCY.format(quote.priceBeforeTax)}</span>
         </div>
         <div className="flex justify-between">
-          <span>TPS (5 %)</span>
-          <span>{CURRENCY.format(quote.tps)}</span>
+          <span>GST (5%)</span>
+          <span>{CURRENCY.format(quote.gst)}</span>
         </div>
         <div className="flex justify-between">
-          <span>TVQ (9,975 %)</span>
-          <span>{CURRENCY.format(quote.tvq)}</span>
+          <span>QST (9.975%)</span>
+          <span>{CURRENCY.format(quote.qst)}</span>
         </div>
       </div>
 
       <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-emerald-800">
-            Subvention LogisVert
+            LogisVert subsidy
           </span>
           <span className="text-lg font-bold text-emerald-700">
             − {CURRENCY.format(quote.subsidy)}
@@ -174,7 +241,7 @@ function PriceCard({ quote }: { quote: Quote }) {
 
       <div className="mt-4 rounded-xl bg-blue-700 p-4 text-white">
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-100">
-          Votre prix final
+          Your final price
         </p>
         <p className="mt-1 text-2xl font-bold">
           {CURRENCY.format(quote.finalPrice)}
