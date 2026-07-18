@@ -228,16 +228,24 @@ function PriceCard({
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-emerald-800">
-            LogisVert subsidy
-          </span>
-          <span className="text-lg font-bold text-emerald-700">
-            − {CURRENCY.format(quote.subsidy)}
+      {quote.subsidy > 0 ? (
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-emerald-800">
+              LogisVert subsidy
+            </span>
+            <span className="text-lg font-bold text-emerald-700">
+              − {CURRENCY.format(quote.subsidy)}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <span className="text-sm font-semibold text-slate-500">
+            No LogisVert subsidy for this size
           </span>
         </div>
-      </div>
+      )}
 
       <div className="mt-4 rounded-xl bg-blue-700 p-4 text-white">
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-100">
@@ -246,10 +254,12 @@ function PriceCard({
         <p className="mt-1 text-2xl font-bold">
           {CURRENCY.format(quote.finalPrice)}
         </p>
-        <p className="mt-1 text-xs text-blue-100">
-          {CURRENCY.format(quote.priceWithTax)} −{" "}
-          {CURRENCY.format(quote.subsidy)}
-        </p>
+        {quote.subsidy > 0 ? (
+          <p className="mt-1 text-xs text-blue-100">
+            {CURRENCY.format(quote.priceWithTax)} −{" "}
+            {CURRENCY.format(quote.subsidy)}
+          </p>
+        ) : null}
       </div>
     </div>
   );

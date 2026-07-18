@@ -31,7 +31,7 @@ export const MULTI_ZONE_SIZES: MultiZoneSize[] = [
 export type Pricing = {
   /** Installed selling price BEFORE taxes ($ CAD) */
   priceBeforeTax: number;
-  /** LogisVert subsidy amount ($ CAD) */
+  /** LogisVert subsidy amount ($ CAD). Use 0 when not eligible (e.g. 9k). */
   subsidy: number;
 };
 
@@ -50,20 +50,20 @@ export const WALL_MOUNT_PRICES: Record<
   Partial<Record<WallMountSize, Pricing>>
 > = {
   Charmo: {
-    "9k": { priceBeforeTax: 3295, subsidy: 900 },
+    "9k": { priceBeforeTax: 3295, subsidy: 0 },
     "12k": { priceBeforeTax: 3495, subsidy: 1000 },
     "18k": { priceBeforeTax: 4295, subsidy: 1300 },
     "24k": { priceBeforeTax: 4995, subsidy: 1700 },
     "36k": { priceBeforeTax: 6495, subsidy: 2000 },
   },
   Clivia: {
-    "9k": { priceBeforeTax: 3695, subsidy: 900 },
+    "9k": { priceBeforeTax: 3695, subsidy: 0 },
     "12k": { priceBeforeTax: 3895, subsidy: 1000 },
     "18k": { priceBeforeTax: 4695, subsidy: 1300 },
     "24k": { priceBeforeTax: 5395, subsidy: 1700 },
   },
   Airy: {
-    "9k": { priceBeforeTax: 4095, subsidy: 900 },
+    "9k": { priceBeforeTax: 4095, subsidy: 0 },
     "12k": { priceBeforeTax: 4295, subsidy: 1000 },
     "18k": { priceBeforeTax: 5095, subsidy: 1300 },
   },
