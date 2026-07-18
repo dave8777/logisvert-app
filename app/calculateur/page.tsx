@@ -139,13 +139,21 @@ export default function Page() {
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
           <Link
             href="/"
-            className="text-sm font-semibold text-blue-700 hover:underline"
+            className="text-sm font-semibold text-brand-orange hover:underline"
           >
             ← Back to sales pricing
           </Link>
-          <h1 className="mt-2 text-2xl font-bold md:text-3xl">
-            Gree Subsidy Calculator
-          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.jpg"
+              alt="Groupe DPSD"
+              className="h-16 w-auto rounded-xl"
+            />
+            <h1 className="text-2xl font-bold text-brand-dark md:text-3xl">
+              Gree Subsidy Calculator
+            </h1>
+          </div>
           <p className="mt-2 text-sm text-slate-600">
             Pick your unit from your own lists. The AHRI number is filled in
             automatically and sent to the LogisVert lookup.
@@ -352,7 +360,7 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={handleLiveLookup}
-                  className="mt-5 w-full rounded-xl bg-blue-700 px-4 py-3 text-base font-semibold text-white transition hover:bg-blue-800"
+                  className="mt-5 w-full rounded-xl bg-brand-orange px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-orange-dark"
                 >
                   Calculate the subsidy
                 </button>

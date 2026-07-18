@@ -65,19 +65,31 @@ export default function Page() {
     <main className="min-h-screen bg-slate-100 text-slate-900">
       <div className="mx-auto max-w-6xl p-4 md:p-8">
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold md:text-3xl">
-                Heat Pumps — Sales Pricing
-              </h1>
-              <p className="mt-2 text-sm text-slate-600">
-                Pick a category and capacity to compare options: price with
-                taxes included, LogisVert subsidy, and final price.
-              </p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.jpg"
+                alt="Groupe DPSD"
+                className="h-24 w-auto rounded-xl"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-brand-dark md:text-3xl">
+                  Groupe <span className="text-brand-orange">DPSD</span> — Sales
+                  Pricing
+                </h1>
+                <p className="mt-1 text-sm font-medium text-brand-blue-dark">
+                  Air Conditioning · Heating · Ventilation
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Pick a category and capacity to compare options: price with
+                  taxes included, LogisVert subsidy, and final price.
+                </p>
+              </div>
             </div>
             <Link
               href="/calculateur"
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-400"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-brand-orange transition hover:border-brand-orange"
             >
               AHRI / LogisVert lookup →
             </Link>
@@ -98,8 +110,8 @@ export default function Page() {
                     onClick={() => setCategory(item)}
                     className={`rounded-xl border px-5 py-3 text-base font-semibold transition ${
                       category === item
-                        ? "border-blue-700 bg-blue-700 text-white"
-                        : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
+                        ? "border-brand-orange bg-brand-orange text-white"
+                        : "border-slate-300 bg-white text-slate-700 hover:border-brand-orange"
                     }`}
                   >
                     {item}
@@ -120,8 +132,8 @@ export default function Page() {
                     onClick={() => handleSizeChange(size)}
                     className={`rounded-xl border px-4 py-3 text-base font-semibold transition ${
                       selectedSize === size
-                        ? "border-blue-700 bg-blue-700 text-white"
-                        : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
+                        ? "border-brand-orange bg-brand-orange text-white"
+                        : "border-slate-300 bg-white text-slate-700 hover:border-brand-orange"
                     }`}
                   >
                     {formatBtu(size)}
@@ -194,7 +206,7 @@ function PriceCard({
   return (
     <div className="flex flex-col rounded-2xl bg-white p-5 shadow-sm">
       <div className="border-b border-slate-200 pb-4">
-        <h2 className="text-xl font-bold">{quote.name}</h2>
+        <h2 className="text-xl font-bold text-brand-dark">{quote.name}</h2>
         <p className="mt-1 text-sm text-slate-600">
           {category} {formatBtu(quote.size)}
           {quote.quantity > 1 ? ` × ${quote.quantity}` : ""}
@@ -229,12 +241,12 @@ function PriceCard({
       </div>
 
       {quote.subsidy > 0 ? (
-        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+        <div className="mt-4 rounded-xl border border-brand-blue bg-brand-blue-light p-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-emerald-800">
+            <span className="text-sm font-semibold text-brand-blue-dark">
               LogisVert subsidy
             </span>
-            <span className="text-lg font-bold text-emerald-700">
+            <span className="text-lg font-bold text-brand-blue-dark">
               − {CURRENCY.format(quote.subsidy)}
             </span>
           </div>
@@ -247,15 +259,15 @@ function PriceCard({
         </div>
       )}
 
-      <div className="mt-4 rounded-xl bg-blue-700 p-4 text-white">
-        <p className="text-xs font-semibold uppercase tracking-wide text-blue-100">
+      <div className="mt-4 rounded-xl bg-brand-orange p-4 text-white">
+        <p className="text-xs font-semibold uppercase tracking-wide text-orange-100">
           Your final price
         </p>
         <p className="mt-1 text-2xl font-bold">
           {CURRENCY.format(quote.finalPrice)}
         </p>
         {quote.subsidy > 0 ? (
-          <p className="mt-1 text-xs text-blue-100">
+          <p className="mt-1 text-xs text-orange-100">
             {CURRENCY.format(quote.priceWithTax)} −{" "}
             {CURRENCY.format(quote.subsidy)}
           </p>
