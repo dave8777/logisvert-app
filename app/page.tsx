@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GREE_OPTIONS,
   LINE_ORDER,
@@ -15,16 +15,10 @@ type InstallationType =
   | "Remplacement d’une thermopompe existante"
   | "Nouvelle installation";
 
-type LookupState =
+type SubmitState =
   | { status: "idle" }
-  | { status: "loading" }
-  | { status: "pending" }
-  | {
-      status: "success";
-      amount: number;
-      installationDate: string;
-      source?: string;
-    }
+  | { status: "submitting" }
+  | { status: "done"; estimate: { min: number; max: number } | null }
   | { status: "error"; message: string };
 
 const SITE_URL = "https://dpsdair.ca";
@@ -36,77 +30,95 @@ const STRINGS = {
   fr: {
     brandTag: "Airclimatisé, Chauffage, Ventilation",
     backToSite: "← Retour au site",
-    title: "Calculateur de subvention LogisVert",
+    title: "Estimation en ligne",
     subtitle:
-      "Choisissez votre thermopompe Gree : le numéro AHRI est trouvé automatiquement et le montant d'aide financière est vérifié pour vous.",
+      "Choisissez votre système Gree, téléversez une photo de la plaque signalétique de votre équipement actuel et obtenez une fourchette de prix approximative.",
     installType: "Type d’installation",
     installTypeReplace: "Remplacement d’une thermopompe existante",
     installTypeNew: "Nouvelle installation",
-    installDate: "Date d’installation",
     productLine: "Gamme de produit",
     equipType: "Type d’équipement",
     choose: "Choisir",
     capacity: "Capacité",
     completePrompt:
-      "Faites une sélection complète pour lancer la vérification LogisVert.",
+      "Faites une sélection complète pour continuer vers l’estimation.",
     noMatch: "Aucun modèle Gree correspondant trouvé.",
     multiMatch: "Plusieurs combinaisons possibles — précisez votre choix :",
     line: "Gamme",
     type: "Type",
     outdoorUnit: "Unité extérieure",
     indoorUnit: "Unité intérieure",
-    ahriNumber: "Numéro AHRI du modèle",
-    quantityLabel: "Nombre d’appareils installés",
-    calculate: "Calculer l’aide financière",
-    idleNote: "Le montant s’affichera après la vérification.",
-    loading: "Vérification du montant en cours…",
-    successTitle: "Aide financière estimée",
-    foundFor: "Montant trouvé pour l’AHRI",
-    dateUsed: "Date d’installation utilisée :",
-    source: "Source :",
-    errorTitle: "La vérification a échoué",
-    pendingTitle: "Montant à confirmer",
+    quantityLabel: "Nombre d’appareils",
+    contactSection: "Vos coordonnées",
+    nameLabel: "Nom complet",
+    phoneLabel: "Téléphone",
+    emailLabel: "Courriel (optionnel)",
+    photosSection: "Photos de votre équipement actuel",
+    photoHint:
+      "La plaque signalétique est l’étiquette (souvent métallique) collée sur l’appareil, avec le numéro de modèle et de série.",
+    outdoorPhoto: "Plaque signalétique — unité extérieure (obligatoire)",
+    indoorPhoto: "Plaque signalétique — unité intérieure (optionnel)",
+    newInstallPhotoHint:
+      "Nouvelle installation? Envoyez plutôt une photo de l’emplacement prévu.",
+    getEstimate: "Obtenir mon estimation",
+    submitting: "Envoi des photos en cours…",
+    missingFields:
+      "Veuillez indiquer votre nom, votre téléphone et téléverser la photo de la plaque extérieure.",
+    estimateTitle: "Fourchette estimée",
+    estimateNote:
+      "Estimation approximative à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier.",
+    pendingTitle: "Photos bien reçues!",
     pendingBody:
-      "Ce modèle est admissible, mais le montant exact dépend de votre situation. Contactez-nous et nous vous le confirmons rapidement — sans frais.",
-    pendingCta: "Appelez-nous : " + PHONE_DISPLAY,
+      "Merci! Nous vérifions votre équipement et vous rappelons rapidement pour planifier une visite et confirmer votre prix — sans frais.",
+    callUs: "Appelez-nous : " + PHONE_DISPLAY,
+    errorTitle: "L’envoi a échoué",
     footerNote: "Un service de Groupe DPSD Inc",
     langToggle: "EN",
   },
   en: {
     brandTag: "Air Conditioning, Heating, Ventilation",
     backToSite: "← Back to site",
-    title: "LogisVert Rebate Calculator",
+    title: "Online Estimate",
     subtitle:
-      "Pick your Gree heat pump: the AHRI number is found automatically and the rebate amount is checked for you.",
+      "Pick your Gree system, upload a photo of your current equipment's nameplate and get a ballpark price range.",
     installType: "Installation type",
     installTypeReplace: "Replacement of an existing heat pump",
     installTypeNew: "New installation",
-    installDate: "Installation date",
     productLine: "Product line",
     equipType: "Equipment type",
     choose: "Select",
     capacity: "Capacity",
-    completePrompt: "Complete your selection to run the LogisVert check.",
+    completePrompt: "Complete your selection to continue to the estimate.",
     noMatch: "No matching Gree model found.",
     multiMatch: "Several possible combinations — pick one:",
     line: "Line",
     type: "Type",
     outdoorUnit: "Outdoor unit",
     indoorUnit: "Indoor unit",
-    ahriNumber: "Model AHRI number",
-    quantityLabel: "Number of units installed",
-    calculate: "Calculate my rebate",
-    idleNote: "The amount will appear after the check.",
-    loading: "Checking the current amount…",
-    successTitle: "Estimated rebate",
-    foundFor: "Amount found for AHRI",
-    dateUsed: "Installation date used:",
-    source: "Source:",
-    errorTitle: "The check failed",
-    pendingTitle: "Amount to be confirmed",
+    quantityLabel: "Number of units",
+    contactSection: "Your contact information",
+    nameLabel: "Full name",
+    phoneLabel: "Phone",
+    emailLabel: "Email (optional)",
+    photosSection: "Photos of your current equipment",
+    photoHint:
+      "The nameplate is the label (often metal) on the unit showing the model and serial number.",
+    outdoorPhoto: "Nameplate — outdoor unit (required)",
+    indoorPhoto: "Nameplate — indoor unit (optional)",
+    newInstallPhotoHint:
+      "New installation? Send a photo of the planned location instead.",
+    getEstimate: "Get my estimate",
+    submitting: "Uploading your photos…",
+    missingFields:
+      "Please enter your name and phone, and upload the outdoor nameplate photo.",
+    estimateTitle: "Estimated range",
+    estimateNote:
+      "Ballpark estimate for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it.",
+    pendingTitle: "Photos received!",
     pendingBody:
-      "This model is eligible, but the exact amount depends on your situation. Contact us and we'll confirm it quickly — free of charge.",
-    pendingCta: "Call us: " + PHONE_DISPLAY,
+      "Thanks! We're reviewing your equipment and will call you back shortly to schedule a visit and confirm your price — free of charge.",
+    callUs: "Call us: " + PHONE_DISPLAY,
+    errorTitle: "The submission failed",
     footerNote: "A service of Groupe DPSD Inc",
     langToggle: "FR",
   },
@@ -129,13 +141,19 @@ export default function Page() {
   const [selectedLine, setSelectedLine] = useState<ProductLine>("Charmo");
   const [selectedType, setSelectedType] = useState<EquipmentType | "">("");
   const [selectedSize, setSelectedSize] = useState("");
-  const [installationDate, setInstallationDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
   const [installationType, setInstallationType] =
     useState<InstallationType>("Remplacement d’une thermopompe existante");
   const [quantity, setQuantity] = useState(1);
-  const [lookup, setLookup] = useState<LookupState>({ status: "idle" });
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [outdoorFile, setOutdoorFile] = useState<File | null>(null);
+  const [indoorFile, setIndoorFile] = useState<File | null>(null);
+  const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
+
+  const outdoorInputRef = useRef<HTMLInputElement>(null);
+  const indoorInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -199,65 +217,64 @@ export default function Page() {
   const showTypeDropdown =
     selectedLine !== "Flexx Central" && selectedLine !== "Flexx Add-On";
 
-  function resetLookup() {
-    setLookup({ status: "idle" });
+  const formComplete =
+    Boolean(selectedOption) &&
+    name.trim().length > 0 &&
+    phone.trim().length > 0 &&
+    outdoorFile !== null;
+
+  function resetSubmit() {
+    setSubmit({ status: "idle" });
   }
 
   function handleLineChange(line: ProductLine) {
     setSelectedLine(line);
     setSelectedType("");
     setSelectedSize("");
-    resetLookup();
+    resetSubmit();
   }
 
-  async function handleLiveLookup() {
+  async function handleSubmit() {
     if (!selectedOption) return;
+    if (!formComplete) {
+      setSubmit({ status: "error", message: t.missingFields });
+      return;
+    }
 
-    setLookup({ status: "loading" });
+    setSubmit({ status: "submitting" });
 
     try {
-      const params = new URLSearchParams({
-        ahri: selectedOption.ahri,
-        installationDate,
-        installationType,
-        quantity: String(quantity),
-      });
+      const form = new FormData();
+      form.set("name", name.trim());
+      form.set("phone", phone.trim());
+      form.set("email", email.trim());
+      form.set("optionId", selectedOption.id);
+      form.set("installationType", installationType);
+      form.set("quantity", String(quantity));
+      form.set("lang", lang);
+      if (outdoorFile) form.set("outdoorPhoto", outdoorFile);
+      if (indoorFile) form.set("indoorPhoto", indoorFile);
 
-      const res = await fetch(`/api/logisvert-rebate?${params.toString()}`, {
-        cache: "no-store",
-      });
-
+      const res = await fetch("/api/estimate", { method: "POST", body: form });
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
         throw new Error(
           data?.error ||
-            (lang === "fr"
-              ? "Impossible de récupérer le montant actuel."
-              : "Unable to retrieve the current amount.")
+            (lang === "fr" ? "Une erreur est survenue." : "Something went wrong.")
         );
       }
 
-      if (data.pending || data.amount === null) {
-        setLookup({ status: "pending" });
-        return;
-      }
-
-      setLookup({
-        status: "success",
-        amount: Number(data.amount ?? 0),
-        installationDate: data.installationDate ?? installationDate,
-        source: data.source,
-      });
+      setSubmit({ status: "done", estimate: data.estimate ?? null });
     } catch (error) {
-      setLookup({
+      setSubmit({
         status: "error",
         message:
           error instanceof Error
             ? error.message
             : lang === "fr"
-              ? "Échec de la vérification."
-              : "The check failed.",
+              ? "Une erreur est survenue."
+              : "Something went wrong.",
       });
     }
   }
@@ -305,7 +322,7 @@ export default function Page() {
                     value={installationType}
                     onChange={(e) => {
                       setInstallationType(e.target.value as InstallationType);
-                      resetLookup();
+                      resetSubmit();
                     }}
                   >
                     <option value="Remplacement d’une thermopompe existante">
@@ -318,18 +335,6 @@ export default function Page() {
                 </div>
 
                 <div className="field">
-                  <label>{t.installDate}</label>
-                  <input
-                    type="date"
-                    value={installationDate}
-                    onChange={(e) => {
-                      setInstallationDate(e.target.value);
-                      resetLookup();
-                    }}
-                  />
-                </div>
-
-                <div className="field full">
                   <label>{t.productLine}</label>
                   <select
                     value={selectedLine}
@@ -353,7 +358,7 @@ export default function Page() {
                       onChange={(e) => {
                         setSelectedType(e.target.value as EquipmentType);
                         setSelectedSize("");
-                        resetLookup();
+                        resetSubmit();
                       }}
                     >
                       <option value="">{t.choose}</option>
@@ -372,7 +377,7 @@ export default function Page() {
                     value={selectedSize}
                     onChange={(e) => {
                       setSelectedSize(e.target.value);
-                      resetLookup();
+                      resetSubmit();
                     }}
                   >
                     <option value="">{t.choose}</option>
@@ -402,7 +407,7 @@ export default function Page() {
                         onClick={() => {
                           setSelectedType(item.equipmentType);
                           setSelectedSize(item.sizeLabel);
-                          resetLookup();
+                          resetSubmit();
                         }}
                       >
                         <div className="title">
@@ -423,23 +428,13 @@ export default function Page() {
                       value={equipmentLabel(selectedOption.equipmentType)}
                     />
                     <InfoCard label={t.capacity} value={selectedOption.sizeLabel} />
-                    <InfoCard label="AHRI" value={selectedOption.ahri} />
                     <InfoCard
                       label={t.outdoorUnit}
                       value={selectedOption.outdoorUnit}
                     />
-                    <InfoCard
-                      label={t.indoorUnit}
-                      value={selectedOption.indoorUnit}
-                    />
                   </div>
 
                   <div className="form-grid" style={{ marginTop: "1.1rem" }}>
-                    <div className="field">
-                      <label>{t.ahriNumber}</label>
-                      <input type="text" value={selectedOption.ahri} readOnly />
-                    </div>
-
                     <div className="field">
                       <label>{t.quantityLabel}</label>
                       <div className="stepper">
@@ -447,7 +442,7 @@ export default function Page() {
                           type="button"
                           onClick={() => {
                             setQuantity((prev) => Math.max(1, prev - 1));
-                            resetLookup();
+                            resetSubmit();
                           }}
                         >
                           −
@@ -457,7 +452,7 @@ export default function Page() {
                           type="button"
                           onClick={() => {
                             setQuantity((prev) => prev + 1);
-                            resetLookup();
+                            resetSubmit();
                           }}
                         >
                           +
@@ -466,54 +461,113 @@ export default function Page() {
                     </div>
                   </div>
 
+                  <h3 className="section-title">{t.contactSection}</h3>
+                  <div className="form-grid">
+                    <div className="field">
+                      <label>{t.nameLabel}</label>
+                      <input
+                        type="text"
+                        value={name}
+                        autoComplete="name"
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>{t.phoneLabel}</label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        autoComplete="tel"
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                    <div className="field full">
+                      <label>{t.emailLabel}</label>
+                      <input
+                        type="email"
+                        value={email}
+                        autoComplete="email"
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="section-title">{t.photosSection}</h3>
+                  <p className="photo-hint">
+                    {t.photoHint}
+                    {installationType === "Nouvelle installation"
+                      ? ` ${t.newInstallPhotoHint}`
+                      : ""}
+                  </p>
+                  <div className="form-grid">
+                    <PhotoField
+                      label={t.outdoorPhoto}
+                      file={outdoorFile}
+                      inputRef={outdoorInputRef}
+                      required
+                      onChange={(f) => {
+                        setOutdoorFile(f);
+                        resetSubmit();
+                      }}
+                    />
+                    <PhotoField
+                      label={t.indoorPhoto}
+                      file={indoorFile}
+                      inputRef={indoorInputRef}
+                      onChange={(f) => {
+                        setIndoorFile(f);
+                        resetSubmit();
+                      }}
+                    />
+                  </div>
+
                   <button
                     type="button"
                     className="btn-primary"
-                    onClick={handleLiveLookup}
+                    disabled={!formComplete || submit.status === "submitting"}
+                    onClick={handleSubmit}
                   >
-                    {t.calculate}
+                    {submit.status === "submitting" ? t.submitting : t.getEstimate}
                   </button>
 
-                  {lookup.status === "idle" && (
-                    <div className="status hint">{t.idleNote}</div>
+                  {submit.status === "idle" && !formComplete && (
+                    <div className="status hint">{t.missingFields}</div>
                   )}
 
-                  {lookup.status === "loading" && (
-                    <div className="status loading">{t.loading}</div>
-                  )}
-
-                  {lookup.status === "success" && (
+                  {submit.status === "done" && submit.estimate && (
                     <div className="result">
-                      <div className="kicker">{t.successTitle}</div>
-                      <div className="amount">{currency.format(lookup.amount)}</div>
-                      <p>
-                        {t.foundFor} {selectedOption.ahri}
-                      </p>
-                      <p>
-                        {t.dateUsed} {lookup.installationDate}
-                      </p>
-                      {lookup.source ? (
-                        <p>
-                          {t.source} {lookup.source}
-                        </p>
-                      ) : null}
+                      <div className="kicker">{t.estimateTitle}</div>
+                      <div className="amount">
+                        {currency.format(submit.estimate.min)} –{" "}
+                        {currency.format(submit.estimate.max)}
+                      </div>
+                      <p>{t.estimateNote}</p>
                     </div>
                   )}
 
-                  {lookup.status === "pending" && (
+                  {submit.status === "done" && !submit.estimate && (
                     <div className="pending">
                       <h3>{t.pendingTitle}</h3>
                       <p>{t.pendingBody}</p>
                       <a className="cta" href={`tel:${PHONE_TEL}`}>
-                        {t.pendingCta}
+                        {t.callUs}
                       </a>
                     </div>
                   )}
 
-                  {lookup.status === "error" && (
+                  {submit.status === "error" && (
                     <div className="status error">
                       <strong>{t.errorTitle}</strong>
-                      {lookup.message}
+                      {submit.message}
                     </div>
                   )}
                 </div>
@@ -540,6 +594,48 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     <div className="info-card">
       <div className="label">{label}</div>
       <div className="value">{value}</div>
+    </div>
+  );
+}
+
+function PhotoField({
+  label,
+  file,
+  onChange,
+  inputRef,
+  required,
+}: {
+  label: string;
+  file: File | null;
+  onChange: (file: File | null) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  required?: boolean;
+}) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  return (
+    <div className={`field photo-field${required ? " required" : ""}`}>
+      <label>{label}</label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+      />
+      {previewUrl ? (
+        <img className="photo-preview" src={previewUrl} alt="" />
+      ) : null}
     </div>
   );
 }

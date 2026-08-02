@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Calculateur de subvention LogisVert — Groupe DPSD Inc",
+  title: "Estimation en ligne — Groupe DPSD Inc",
   description:
-    "Estimez la subvention LogisVert pour votre thermopompe Gree installée par Groupe DPSD Inc.",
+    "Obtenez une fourchette de prix approximative pour votre thermopompe Gree installée par Groupe DPSD Inc.",
   icons: { icon: "/favicon.png" },
 };
 

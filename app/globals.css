@@ -177,6 +177,34 @@ a:hover { text-decoration: underline; }
 .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232, 118, 45, 0.5); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+/* ===== Section titles / photo uploads ===== */
+.section-title {
+  margin: 1.6rem 0 0.8rem;
+  font-size: 1.02rem;
+  color: var(--navy);
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+}
+.photo-hint { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.9rem; }
+.photo-field input[type="file"] {
+  padding: 0.55rem 0.7rem;
+  background: var(--bg-soft);
+  cursor: pointer;
+}
+.photo-field.required label::after {
+  content: " *";
+  color: var(--warm);
+  font-weight: 700;
+}
+.photo-preview {
+  margin-top: 0.6rem;
+  width: 140px;
+  height: 105px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
 /* ===== Status boxes ===== */
 .status { margin-top: 1.2rem; border-radius: 10px; padding: 1rem 1.2rem; font-size: 0.92rem; }
 .status.hint { border: 1px dashed var(--line); background: var(--bg-soft); color: var(--muted); }
