@@ -18,7 +18,11 @@ type InstallationType =
 type SubmitState =
   | { status: "idle" }
   | { status: "submitting" }
-  | { status: "done"; estimate: { min: number; max: number } | null }
+  | {
+      status: "done";
+      estimate: { min: number; max: number } | null;
+      subsidy: number | null;
+    }
   | { status: "error"; message: string };
 
 const SITE_URL = "https://dpsdair.ca";
@@ -64,9 +68,12 @@ const STRINGS = {
     submitting: "Envoi des photos en cours…",
     missingFields:
       "Veuillez indiquer votre nom, votre téléphone et téléverser la photo de la plaque extérieure.",
-    estimateTitle: "Fourchette estimée",
+    estimateTitle: "Fourchette estimée — installation complète, taxes incluses",
     estimateNote:
       "Estimation approximative à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier.",
+    subsidyLine: "Subvention LogisVert admissible :",
+    subsidyNote: "On s'occupe de tous les documents pour vous.",
+    brochure: "Télécharger la brochure (PDF)",
     pendingTitle: "Photos bien reçues!",
     pendingBody:
       "Merci! Nous vérifions votre équipement et vous rappelons rapidement pour planifier une visite et confirmer votre prix — sans frais.",
@@ -111,9 +118,12 @@ const STRINGS = {
     submitting: "Uploading your photos…",
     missingFields:
       "Please enter your name and phone, and upload the outdoor nameplate photo.",
-    estimateTitle: "Estimated range",
+    estimateTitle: "Estimated range — complete installation, taxes included",
     estimateNote:
       "Ballpark estimate for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it.",
+    subsidyLine: "Eligible LogisVert rebate:",
+    subsidyNote: "We handle all the paperwork for you.",
+    brochure: "Download the brochure (PDF)",
     pendingTitle: "Photos received!",
     pendingBody:
       "Thanks! We're reviewing your equipment and will call you back shortly to schedule a visit and confirm your price — free of charge.",
@@ -123,6 +133,34 @@ const STRINGS = {
     langToggle: "FR",
   },
 } as const;
+
+function familyKey(line: ProductLine): string {
+  if (line === "Flexx Central" || line === "Flexx Add-On") return "flexx";
+  return line.toLowerCase();
+}
+
+function productImage(option: GreeOption): string {
+  switch (option.equipmentType) {
+    case "Cassette":
+      return "/products/cassette.png";
+    case "Console":
+      return "/products/console.png";
+    case "Gainable":
+      return "/products/gainable.png";
+    case "Air Handler":
+      return "/products/airhandler.png";
+    case "Cased Coil":
+      return "/products/coil.png";
+    case "Sans conduits":
+    case "Avec conduits":
+    case "Mix":
+      return "/products/multizone.png";
+    default: {
+      const key = familyKey(option.line);
+      return `/products/${key === "flexx" ? "flexx36" : key}.png`;
+    }
+  }
+}
 
 const EQUIPMENT_LABELS_EN: Record<EquipmentType, string> = {
   Murale: "Wall-mounted",
@@ -265,7 +303,11 @@ export default function Page() {
         );
       }
 
-      setSubmit({ status: "done", estimate: data.estimate ?? null });
+      setSubmit({
+        status: "done",
+        estimate: data.estimate ?? null,
+        subsidy: data.subsidy ?? null,
+      });
     } catch (error) {
       setSubmit({
         status: "error",
@@ -421,6 +463,27 @@ export default function Page() {
                 </div>
               ) : selectedOption ? (
                 <div className="summary">
+                  <div className="product-row">
+                    <img
+                      className="product-shot"
+                      src={productImage(selectedOption)}
+                      alt={selectedOption.line}
+                    />
+                    <div className="product-meta">
+                      <img
+                        className="product-logo"
+                        src={`/products/${familyKey(selectedOption.line)}logo.png`}
+                        alt={selectedOption.line}
+                      />
+                      <a
+                        href={`/brochures/brochure-${familyKey(selectedOption.line)}-${lang}.pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t.brochure}
+                      </a>
+                    </div>
+                  </div>
                   <div className="summary-grid">
                     <InfoCard label={t.line} value={selectedOption.line} />
                     <InfoCard
@@ -550,13 +613,32 @@ export default function Page() {
                         {currency.format(submit.estimate.min)} –{" "}
                         {currency.format(submit.estimate.max)}
                       </div>
+                      {submit.subsidy ? (
+                        <p className="subsidy">
+                          {t.subsidyLine}{" "}
+                          <strong>{currency.format(submit.subsidy)}</strong> —{" "}
+                          {t.subsidyNote}
+                        </p>
+                      ) : null}
                       <p>{t.estimateNote}</p>
+                      <img
+                        className="badge-chip"
+                        src={`/products/guarantee-${lang}.png`}
+                        alt="10+2"
+                      />
                     </div>
                   )}
 
                   {submit.status === "done" && !submit.estimate && (
                     <div className="pending">
                       <h3>{t.pendingTitle}</h3>
+                      {submit.subsidy ? (
+                        <p className="subsidy">
+                          {t.subsidyLine}{" "}
+                          <strong>{currency.format(submit.subsidy)}</strong> —{" "}
+                          {t.subsidyNote}
+                        </p>
+                      ) : null}
                       <p>{t.pendingBody}</p>
                       <a className="cta" href={`tel:${PHONE_TEL}`}>
                         {t.callUs}

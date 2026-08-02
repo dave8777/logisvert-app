@@ -251,6 +251,45 @@ a:hover { text-decoration: underline; }
 }
 .pending .cta:hover { text-decoration: none; box-shadow: 0 4px 14px rgba(232, 118, 45, 0.45); }
 
+/* ===== Product visuals ===== */
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+.product-shot {
+  width: 180px;
+  max-height: 150px;
+  object-fit: contain;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem;
+}
+.product-meta { display: flex; flex-direction: column; gap: 0.6rem; }
+.product-logo { height: 30px; width: auto; object-fit: contain; align-self: flex-start; }
+.product-meta a { font-size: 0.9rem; font-weight: 500; }
+
+.result .subsidy,
+.pending .subsidy {
+  margin-top: 0.7rem;
+  font-size: 0.95rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+}
+.badge-chip {
+  margin-top: 1rem;
+  height: 64px;
+  width: auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.4rem 0.7rem;
+}
+
 /* ===== Selection summary ===== */
 .summary {
   margin-top: 1.4rem;

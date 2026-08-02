@@ -1,6 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { GREE_OPTIONS } from "../../../lib/gree-options";
-import { BASE_PRICES, RANGE_MARGIN } from "../../../lib/pricing";
+import { estimateFor, subsidyFor } from "../../../lib/pricing";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
@@ -96,14 +96,8 @@ export async function POST(request: Request) {
     storedPhotos[field] = key;
   }
 
-  const basePrice = BASE_PRICES[option.id];
-  const estimate =
-    basePrice !== undefined
-      ? {
-          min: Math.max(0, basePrice * quantity - RANGE_MARGIN),
-          max: basePrice * quantity + RANGE_MARGIN,
-        }
-      : null;
+  const estimate = estimateFor(option, quantity);
+  const subsidy = subsidyFor(option, quantity);
 
   const record = {
     id,
@@ -122,6 +116,7 @@ export async function POST(request: Request) {
       quantity,
     },
     estimate,
+    subsidy,
     photos: storedPhotos,
   };
 
@@ -129,5 +124,5 @@ export async function POST(request: Request) {
     httpMetadata: { contentType: "application/json" },
   });
 
-  return Response.json({ ok: true, id, estimate });
+  return Response.json({ ok: true, id, estimate, subsidy });
 }
