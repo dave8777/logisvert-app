@@ -8,14 +8,17 @@ import {
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
 // Zone de service DPSD, confirmée par le propriétaire (2026-08-02) :
-// West Island, Saint-Lazare, Les Cèdres (J7T), Hudson et Rigaud (J0P).
-// J0P est un grand FSA rural qui déborde sur d'autres villages voisins —
+// West Island; Saint-Lazare et Les Cèdres (J7T); Hudson et Rigaud (J0P);
+// Vaudreuil-Dorion, Pincourt, L'Île-Perrot, Notre-Dame-de-l'Île-Perrot et
+// Terrasse-Vaudreuil (J7V); Lachine et LaSalle (H8N H8R H8S H8T).
+// J0P est un grand FSA rural qui déborde sur des villages voisins —
 // volontairement inclusif : mieux vaut accepter un village limitrophe que
-// refuser Hudson. D'autres secteurs s'ajouteront ici au besoin.
+// refuser Hudson. D'autres secteurs au besoin.
 const SERVICE_FSA = new Set(
   (
-    "H8Y H8Z H9A H9B H9C H9E H9G H9H H9J H9K H9P H9R H9S H9W H9X " +
-    "J7T J0P"
+    "H8N H8R H8S H8T H8Y H8Z " +
+    "H9A H9B H9C H9E H9G H9H H9J H9K H9P H9R H9S H9W H9X " +
+    "J7T J7V J0P"
   ).split(" ")
 );
 
