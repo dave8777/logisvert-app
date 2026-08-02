@@ -1,12 +1,15 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { buildEstimatePdf, type PdfRecord } from "../../../../lib/estimatePdf";
 
+// Versions JPEG réduites (public/products/pdf) : l'incorporation JPEG dans
+// pdf-lib est quasi gratuite en CPU, alors que les gros PNG dépassent la
+// limite CPU des Workers (erreur 1102).
 const OPTION_ASSETS: Record<string, { photo: string; logo: string }> = {
-  charmo: { photo: "/products/charmo.png", logo: "/products/charmologo.png" },
-  clivia: { photo: "/products/clivia.png", logo: "/products/clivialogo.png" },
-  airy: { photo: "/products/airy.png", logo: "/products/airylogo.png" },
-  handler: { photo: "/products/airhandler.png", logo: "/products/flexxlogo.png" },
-  coil: { photo: "/products/coil.png", logo: "/products/flexxlogo.png" },
+  charmo: { photo: "/products/pdf/charmo.jpg", logo: "/products/pdf/charmologo.jpg" },
+  clivia: { photo: "/products/pdf/clivia.jpg", logo: "/products/pdf/clivialogo.jpg" },
+  airy: { photo: "/products/pdf/airy.jpg", logo: "/products/pdf/airylogo.jpg" },
+  handler: { photo: "/products/pdf/airhandler.jpg", logo: "/products/pdf/flexxlogo.jpg" },
+  coil: { photo: "/products/pdf/coil.jpg", logo: "/products/pdf/flexxlogo.jpg" },
 };
 
 export async function GET(request: Request) {
@@ -65,8 +68,8 @@ export async function GET(request: Request) {
   }
 
   const pdf = await buildEstimatePdf(record, {
-    logo: await asset("/logo-mark.png"),
-    guarantee: await asset(`/products/guarantee-${lang}.png`),
+    logo: await asset("/products/pdf/logo.jpg"),
+    guarantee: await asset(`/products/pdf/guarantee-${lang}.jpg`),
     photos,
     logos,
   });
