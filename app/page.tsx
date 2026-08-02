@@ -23,6 +23,8 @@ type SubmitState =
       options: ResultOption[];
       inArea: boolean | null;
       emailSent: boolean;
+      id: string;
+      date: string;
     }
   | { status: "error"; message: string };
 
@@ -101,6 +103,7 @@ const STRINGS = {
       "Parfait — nous avons préréglé le formulaire pour un remplacement équivalent. Vous pouvez ajuster la capacité au besoin.",
     missingFields:
       "Veuillez indiquer votre nom, votre téléphone, votre courriel, votre code postal et téléverser la photo de la plaque extérieure.",
+    viewPdf: "📄 Voir mon estimation (PDF)",
     resultsTitle: "Vos fourchettes estimées",
     resultsSub:
       "Installation complète, taxes incluses. Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement.",
@@ -174,6 +177,7 @@ const STRINGS = {
       "Perfect — we've preset the form for an equivalent replacement. You can adjust the capacity if needed.",
     missingFields:
       "Please enter your name, phone, email and postal code, and upload the outdoor nameplate photo.",
+    viewPdf: "📄 View my estimate (PDF)",
     resultsTitle: "Your estimated ranges",
     resultsSub:
       "Complete installation, taxes included. Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly.",
@@ -361,6 +365,8 @@ export default function Page() {
         options: (data.options ?? []) as ResultOption[],
         inArea: data.inArea ?? null,
         emailSent: Boolean(data.emailSent),
+        id: String(data.id ?? ""),
+        date: String(data.date ?? ""),
       });
     } catch (error) {
       setSubmit({
@@ -737,6 +743,16 @@ export default function Page() {
                           );
                         })}
                       </div>
+                      {submit.id && submit.date ? (
+                        <a
+                          className="doc-link"
+                          href={`/estimation?id=${submit.id}&date=${submit.date}&lang=${lang}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t.viewPdf}
+                        </a>
+                      ) : null}
                       <p className="results-note">{t.subsidyNote}</p>
                       {submit.emailSent ? (
                         <p className="results-note">{t.emailedNote}</p>

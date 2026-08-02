@@ -120,23 +120,29 @@ function clientEmailHtml(
   lang: string,
   name: string,
   selectionLabel: string,
-  options: QuoteOption[]
+  options: QuoteOption[],
+  docUrl: string
 ): { subject: string; html: string } {
   const fr = lang === "fr";
   const subject = fr
     ? "Vos estimations — Groupe DPSD"
     : "Your estimates — Groupe DPSD";
   const rows = optionRowsHtml(options, lang);
+  const docLink = fr
+    ? `<p><a href="${docUrl}" style="display:inline-block;background:#e8762d;color:#fff;padding:10px 22px;border-radius:999px;text-decoration:none;font-weight:600">📄 Voir mon estimation (PDF)</a><br><span style="font-size:0.85em;color:#5a6b7b">Votre feuille d'estimation détaillée — imprimable et enregistrable en PDF.</span></p>`
+    : `<p><a href="${docUrl}" style="display:inline-block;background:#e8762d;color:#fff;padding:10px 22px;border-radius:999px;text-decoration:none;font-weight:600">📄 View my estimate (PDF)</a><br><span style="font-size:0.85em;color:#5a6b7b">Your detailed estimate sheet — printable and savable as PDF.</span></p>`;
   const html = fr
     ? `<p>Bonjour ${name},</p>
 <p>Merci pour votre demande. Voici vos fourchettes approximatives pour : <strong>${selectionLabel}</strong> — installation complète, taxes incluses.</p>
 ${rows}
+${docLink}
 <p>Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier, et nous nous occupons de tous les documents LogisVert pour vous.</p>
 <p>Des questions? Appelez-nous au ${PHONE_DISPLAY}.</p>
 <p>— Groupe DPSD Inc<br>RBQ : 5733-3916-01 · Membre de la CMMTQ<br>https://dpsdair.ca</p>`
     : `<p>Hello ${name},</p>
 <p>Thank you for your request. Here are your ballpark ranges for: <strong>${selectionLabel}</strong> — complete installation, taxes included.</p>
 ${rows}
+${docLink}
 <p>Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it, and we handle all the LogisVert paperwork for you.</p>
 <p>Questions? Call us at ${PHONE_DISPLAY}.</p>
 <p>— Groupe DPSD Inc<br>RBQ: 5733-3916-01 · CMMTQ member<br>https://dpsdair.ca</p>`;
@@ -281,8 +287,9 @@ export async function POST(request: Request) {
   // Courriels (via Resend) : estimations au client, avis au propriétaire.
   // Un échec d'envoi ne bloque jamais la demande.
   let emailSent = false;
+  const docUrl = `https://app.dpsdair.ca/estimation?id=${id}&date=${submittedAt.slice(0, 10)}&lang=${lang}`;
   if (env.RESEND_API_KEY) {
-    const msg = clientEmailHtml(lang, name, selectionLabel, options);
+    const msg = clientEmailHtml(lang, name, selectionLabel, options, docUrl);
     emailSent = await sendEmail(env.RESEND_API_KEY, email, msg.subject, msg.html);
     const officeRows = namedOptions
       .filter((o) => o.available && o.estimate)
@@ -343,5 +350,12 @@ ${notes ? `<p>Notes : ${notes}</p>` : ""}
     }
   );
 
-  return Response.json({ ok: true, id, options, inArea, emailSent });
+  return Response.json({
+    ok: true,
+    id,
+    date: submittedAt.slice(0, 10),
+    options,
+    inArea,
+    emailSent,
+  });
 }
