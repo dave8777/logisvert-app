@@ -6,7 +6,16 @@ type SubmissionRecord = {
   id: string;
   submittedAt: string;
   lang: string;
-  contact: { name: string; phone: string; email: string | null };
+  contact: {
+    name: string;
+    phone: string;
+    email: string | null;
+    address?: string | null;
+    city?: string | null;
+    postal?: string | null;
+  };
+  notes?: string | null;
+  inArea?: boolean | null;
   selection: {
     line: string;
     equipmentType: string;
@@ -16,6 +25,7 @@ type SubmissionRecord = {
     quantity: number;
   };
   estimate: { min: number; max: number } | null;
+  subsidy?: number | null;
   photos: Record<string, string>;
 };
 
@@ -142,6 +152,16 @@ export default function AdminPage() {
                           </div>
                         </div>
                         <div className="info-card">
+                          <div className="label">
+                            Adresse{r.inArea === false ? " — HORS ZONE" : ""}
+                          </div>
+                          <div className="value">
+                            {[r.contact.address, r.contact.city, r.contact.postal]
+                              .filter(Boolean)
+                              .join(", ") || "—"}
+                          </div>
+                        </div>
+                        <div className="info-card">
                           <div className="label">Système</div>
                           <div className="value">
                             {r.selection.line} · {r.selection.equipmentType} ·{" "}
@@ -155,9 +175,18 @@ export default function AdminPage() {
                           <div className="value">
                             {r.estimate
                               ? `${CURRENCY.format(r.estimate.min)} – ${CURRENCY.format(r.estimate.max)}`
-                              : "À confirmer (aucun barème)"}
+                              : "À confirmer"}
+                            {r.subsidy
+                              ? ` · LogisVert ${CURRENCY.format(r.subsidy)}`
+                              : ""}
                           </div>
                         </div>
+                        {r.notes ? (
+                          <div className="info-card">
+                            <div className="label">Notes du client</div>
+                            <div className="value">{r.notes}</div>
+                          </div>
+                        ) : null}
                       </div>
                       <div style={{ marginTop: "0.9rem", display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
                         {Object.entries(r.photos).map(([field, path]) => (

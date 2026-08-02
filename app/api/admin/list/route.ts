@@ -37,11 +37,12 @@ export async function GET(request: Request) {
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
 
-  // Newest first (keys start with submissions/YYYY-MM-DD/), cap at 200.
+  // Rough newest-first by date folder, cap at 200, then sort precisely by
+  // the record's own timestamp (same-day keys are UUID-ordered otherwise).
   recordKeys.sort().reverse();
   const limited = recordKeys.slice(0, 200);
 
-  const records: unknown[] = [];
+  const records: { submittedAt?: string }[] = [];
   for (const keyName of limited) {
     const obj = await env.UPLOADS.get(keyName);
     if (!obj) continue;
@@ -51,6 +52,9 @@ export async function GET(request: Request) {
       // ignore malformed records
     }
   }
+  records.sort((a, b) =>
+    (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "")
+  );
 
   return Response.json({ ok: true, count: records.length, records });
 }

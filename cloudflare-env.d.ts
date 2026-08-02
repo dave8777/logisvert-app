@@ -27,4 +27,5 @@ interface CloudflareEnv {
     }>;
   };
   ADMIN_KEY?: string;
+  RESEND_API_KEY?: string;
 }

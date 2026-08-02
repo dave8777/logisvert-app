@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   GREE_OPTIONS,
   LINE_ORDER,
@@ -22,6 +22,8 @@ type SubmitState =
       status: "done";
       estimate: { min: number; max: number } | null;
       subsidy: number | null;
+      inArea: boolean | null;
+      emailSent: boolean;
     }
   | { status: "error"; message: string };
 
@@ -57,17 +59,30 @@ const STRINGS = {
     nameLabel: "Nom complet",
     phoneLabel: "Téléphone",
     emailLabel: "Courriel (optionnel)",
-    photosSection: "Photos de votre équipement actuel",
+    addressLabel: "Adresse d’installation",
+    cityLabel: "Ville",
+    postalLabel: "Code postal",
+    notesLabel: "Détails ou questions (optionnel)",
+    outOfArea:
+      "Votre secteur semble à l'extérieur de notre zone de service habituelle — envoyez votre demande quand même et nous confirmerons si nous pouvons vous servir.",
+    photosSection: "Photos de votre installation",
     photoHint:
-      "La plaque signalétique est l’étiquette (souvent métallique) collée sur l’appareil, avec le numéro de modèle et de série.",
-    outdoorPhoto: "Plaque signalétique — unité extérieure (obligatoire)",
-    indoorPhoto: "Plaque signalétique — unité intérieure (optionnel)",
+      "La plaque signalétique est l’étiquette (souvent métallique) collée sur l’appareil, avec le numéro de modèle et de série. Plus vous fournissez de photos, plus votre estimation sera précise.",
+    photoExtNameplate: "Plaque signalétique — unité extérieure",
+    photoExtUnit: "Unité extérieure — vue d’ensemble",
+    photoIntNameplate: "Plaque signalétique — unité intérieure",
+    photoIntUnit: "Unité intérieure — vue d’ensemble",
+    photoPanel: "Panneau électrique (porte ouverte)",
+    optional: "(optionnel)",
     newInstallPhotoHint:
-      "Nouvelle installation? Envoyez plutôt une photo de l’emplacement prévu.",
+      "Nouvelle installation? Envoyez plutôt des photos des emplacements prévus.",
+    emailHint:
+      "Indiquez votre courriel pour recevoir une copie de votre estimation.",
+    emailedNote: "Une copie de votre estimation a été envoyée à votre courriel.",
     getEstimate: "Obtenir mon estimation",
     submitting: "Envoi des photos en cours…",
     missingFields:
-      "Veuillez indiquer votre nom, votre téléphone et téléverser la photo de la plaque extérieure.",
+      "Veuillez indiquer votre nom, votre téléphone, votre code postal et téléverser la photo de la plaque extérieure.",
     estimateTitle: "Fourchette estimée — installation complète, taxes incluses",
     estimateNote:
       "Estimation approximative à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier.",
@@ -107,17 +122,29 @@ const STRINGS = {
     nameLabel: "Full name",
     phoneLabel: "Phone",
     emailLabel: "Email (optional)",
-    photosSection: "Photos of your current equipment",
+    addressLabel: "Installation address",
+    cityLabel: "City",
+    postalLabel: "Postal code",
+    notesLabel: "Details or questions (optional)",
+    outOfArea:
+      "Your area looks like it's outside our usual service zone — send your request anyway and we'll confirm whether we can serve you.",
+    photosSection: "Photos of your installation",
     photoHint:
-      "The nameplate is the label (often metal) on the unit showing the model and serial number.",
-    outdoorPhoto: "Nameplate — outdoor unit (required)",
-    indoorPhoto: "Nameplate — indoor unit (optional)",
+      "The nameplate is the label (often metal) on the unit showing the model and serial number. The more photos you provide, the more accurate your estimate.",
+    photoExtNameplate: "Nameplate — outdoor unit",
+    photoExtUnit: "Outdoor unit — overall view",
+    photoIntNameplate: "Nameplate — indoor unit",
+    photoIntUnit: "Indoor unit — overall view",
+    photoPanel: "Electrical panel (door open)",
+    optional: "(optional)",
     newInstallPhotoHint:
-      "New installation? Send a photo of the planned location instead.",
+      "New installation? Send photos of the planned locations instead.",
+    emailHint: "Enter your email to receive a copy of your estimate.",
+    emailedNote: "A copy of your estimate has been sent to your email.",
     getEstimate: "Get my estimate",
     submitting: "Uploading your photos…",
     missingFields:
-      "Please enter your name and phone, and upload the outdoor nameplate photo.",
+      "Please enter your name, phone and postal code, and upload the outdoor nameplate photo.",
     estimateTitle: "Estimated range — complete installation, taxes included",
     estimateNote:
       "Ballpark estimate for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it.",
@@ -186,12 +213,19 @@ export default function Page() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [outdoorFile, setOutdoorFile] = useState<File | null>(null);
-  const [indoorFile, setIndoorFile] = useState<File | null>(null);
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [postal, setPostal] = useState("");
+  const [notes, setNotes] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot — humans leave it empty
+  const [photos, setPhotos] = useState<Record<string, File | null>>({
+    exteriorNameplate: null,
+    exteriorUnit: null,
+    interiorNameplate: null,
+    interiorUnit: null,
+    panel: null,
+  });
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
-
-  const outdoorInputRef = useRef<HTMLInputElement>(null);
-  const indoorInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -259,7 +293,8 @@ export default function Page() {
     Boolean(selectedOption) &&
     name.trim().length > 0 &&
     phone.trim().length > 0 &&
-    outdoorFile !== null;
+    postal.trim().replace(/\s/g, "").length >= 3 &&
+    photos.exteriorNameplate !== null;
 
   function resetSubmit() {
     setSubmit({ status: "idle" });
@@ -286,12 +321,18 @@ export default function Page() {
       form.set("name", name.trim());
       form.set("phone", phone.trim());
       form.set("email", email.trim());
+      form.set("address", address.trim());
+      form.set("city", city.trim());
+      form.set("postal", postal.trim());
+      form.set("notes", notes.trim());
+      form.set("website", website);
       form.set("optionId", selectedOption.id);
       form.set("installationType", installationType);
       form.set("quantity", String(quantity));
       form.set("lang", lang);
-      if (outdoorFile) form.set("outdoorPhoto", outdoorFile);
-      if (indoorFile) form.set("indoorPhoto", indoorFile);
+      for (const [key, file] of Object.entries(photos)) {
+        if (file) form.set(key, file);
+      }
 
       const res = await fetch("/api/estimate", { method: "POST", body: form });
       const data = await res.json();
@@ -307,6 +348,8 @@ export default function Page() {
         status: "done",
         estimate: data.estimate ?? null,
         subsidy: data.subsidy ?? null,
+        inArea: data.inArea ?? null,
+        emailSent: Boolean(data.emailSent),
       });
     } catch (error) {
       setSubmit({
@@ -561,7 +604,65 @@ export default function Page() {
                           resetSubmit();
                         }}
                       />
+                      <p className="field-hint">{t.emailHint}</p>
                     </div>
+                    <div className="field full">
+                      <label>{t.addressLabel}</label>
+                      <input
+                        type="text"
+                        value={address}
+                        autoComplete="street-address"
+                        onChange={(e) => {
+                          setAddress(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>{t.cityLabel}</label>
+                      <input
+                        type="text"
+                        value={city}
+                        autoComplete="address-level2"
+                        onChange={(e) => {
+                          setCity(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>{t.postalLabel}</label>
+                      <input
+                        type="text"
+                        value={postal}
+                        autoComplete="postal-code"
+                        onChange={(e) => {
+                          setPostal(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                    <div className="field full">
+                      <label>{t.notesLabel}</label>
+                      <textarea
+                        rows={3}
+                        value={notes}
+                        onChange={(e) => {
+                          setNotes(e.target.value);
+                          resetSubmit();
+                        }}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      name="website"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      className="hp-field"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                    />
                   </div>
 
                   <h3 className="section-title">{t.photosSection}</h3>
@@ -572,25 +673,26 @@ export default function Page() {
                       : ""}
                   </p>
                   <div className="form-grid">
-                    <PhotoField
-                      label={t.outdoorPhoto}
-                      file={outdoorFile}
-                      inputRef={outdoorInputRef}
-                      required
-                      onChange={(f) => {
-                        setOutdoorFile(f);
-                        resetSubmit();
-                      }}
-                    />
-                    <PhotoField
-                      label={t.indoorPhoto}
-                      file={indoorFile}
-                      inputRef={indoorInputRef}
-                      onChange={(f) => {
-                        setIndoorFile(f);
-                        resetSubmit();
-                      }}
-                    />
+                    {(
+                      [
+                        ["exteriorNameplate", t.photoExtNameplate, true],
+                        ["exteriorUnit", t.photoExtUnit, false],
+                        ["interiorNameplate", t.photoIntNameplate, false],
+                        ["interiorUnit", t.photoIntUnit, false],
+                        ["panel", t.photoPanel, false],
+                      ] as [string, string, boolean][]
+                    ).map(([key, label, required]) => (
+                      <PhotoField
+                        key={key}
+                        label={required ? label : `${label} ${t.optional}`}
+                        file={photos[key]}
+                        required={required}
+                        onChange={(f) => {
+                          setPhotos((prev) => ({ ...prev, [key]: f }));
+                          resetSubmit();
+                        }}
+                      />
+                    ))}
                   </div>
 
                   <button
@@ -621,6 +723,10 @@ export default function Page() {
                         </p>
                       ) : null}
                       <p>{t.estimateNote}</p>
+                      {submit.emailSent ? <p>{t.emailedNote}</p> : null}
+                      {submit.inArea === false ? (
+                        <p className="subsidy">{t.outOfArea}</p>
+                      ) : null}
                       <img
                         className="badge-chip"
                         src={`/products/guarantee-${lang}.png`}
@@ -640,6 +746,9 @@ export default function Page() {
                         </p>
                       ) : null}
                       <p>{t.pendingBody}</p>
+                      {submit.inArea === false ? (
+                        <p className="subsidy">{t.outOfArea}</p>
+                      ) : null}
                       <a className="cta" href={`tel:${PHONE_TEL}`}>
                         {t.callUs}
                       </a>
@@ -684,13 +793,11 @@ function PhotoField({
   label,
   file,
   onChange,
-  inputRef,
   required,
 }: {
   label: string;
   file: File | null;
   onChange: (file: File | null) => void;
-  inputRef: React.RefObject<HTMLInputElement | null>;
   required?: boolean;
 }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -709,7 +816,6 @@ function PhotoField({
     <div className={`field photo-field${required ? " required" : ""}`}>
       <label>{label}</label>
       <input
-        ref={inputRef}
         type="file"
         accept="image/*"
         capture="environment"
