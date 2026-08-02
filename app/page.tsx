@@ -92,6 +92,13 @@ const STRINGS = {
       "Nouvelle installation? Envoyez plutôt des photos des emplacements prévus.",
     getEstimate: "Obtenir mes estimations",
     submitting: "Envoi des photos en cours…",
+    detecting: "Lecture de votre plaque signalétique…",
+    detectedTitle: "Unité détectée sur votre photo :",
+    detectedQuestion: "Cherchez-vous à remplacer cette unité?",
+    detectedYes: "Oui, remplacer cette unité",
+    detectedNo: "Non / autre projet",
+    detectedApplied:
+      "Parfait — nous avons préréglé le formulaire pour un remplacement équivalent. Vous pouvez ajuster la capacité au besoin.",
     missingFields:
       "Veuillez indiquer votre nom, votre téléphone, votre courriel, votre code postal et téléverser la photo de la plaque extérieure.",
     resultsTitle: "Vos fourchettes estimées",
@@ -158,6 +165,13 @@ const STRINGS = {
       "New installation? Send photos of the planned locations instead.",
     getEstimate: "Get my estimates",
     submitting: "Uploading your photos…",
+    detecting: "Reading your nameplate…",
+    detectedTitle: "Unit detected on your photo:",
+    detectedQuestion: "Are you looking to replace this unit?",
+    detectedYes: "Yes, replace this unit",
+    detectedNo: "No / different project",
+    detectedApplied:
+      "Perfect — we've preset the form for an equivalent replacement. You can adjust the capacity if needed.",
     missingFields:
       "Please enter your name, phone, email and postal code, and upload the outdoor nameplate photo.",
     resultsTitle: "Your estimated ranges",
@@ -205,6 +219,16 @@ export default function Page() {
     panel: null,
   });
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
+  const [detection, setDetection] = useState<
+    | { status: "idle" }
+    | { status: "loading" }
+    | {
+        status: "done";
+        description: string;
+        suggestion: { systemType: SystemType; sizeKey: string } | null;
+      }
+  >({ status: "idle" });
+  const [replaceChoice, setReplaceChoice] = useState<"" | "yes" | "no">("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -247,6 +271,42 @@ export default function Page() {
     setSubmit({ status: "idle" });
   }
 
+  // Lecture de la plaque extérieure (OCR via Workers AI) dès qu'une photo
+  // est choisie — comme l'app de vente. Échec silencieux : le client peut
+  // toujours continuer sans lecture.
+  async function analyzeNameplate(file: File) {
+    setDetection({ status: "loading" });
+    setReplaceChoice("");
+    try {
+      const form = new FormData();
+      form.set("photo", file);
+      form.set("lang", lang);
+      const res = await fetch("/api/nameplate", { method: "POST", body: form });
+      const data = await res.json();
+      if (data?.ok && data.description) {
+        setDetection({
+          status: "done",
+          description: data.description as string,
+          suggestion: data.suggestion ?? null,
+        });
+        return;
+      }
+    } catch {
+      // silencieux
+    }
+    setDetection({ status: "idle" });
+  }
+
+  function confirmReplace() {
+    setReplaceChoice("yes");
+    setInstallationType("Remplacement d’une thermopompe existante");
+    if (detection.status === "done" && detection.suggestion) {
+      setSystemType(detection.suggestion.systemType);
+      setSizeKey(detection.suggestion.sizeKey);
+    }
+    resetSubmit();
+  }
+
   function handleSystemChange(next: SystemType) {
     setSystemType(next);
     setSizeKey("");
@@ -277,6 +337,11 @@ export default function Page() {
       form.set("installationType", installationType);
       form.set("quantity", String(systemType === "murale" ? quantity : 1));
       form.set("lang", lang);
+      form.set(
+        "detectedUnit",
+        detection.status === "done" ? detection.description : ""
+      );
+      form.set("replaceConfirmed", replaceChoice);
       for (const [key, file] of Object.entries(photos)) {
         if (file) form.set(key, file);
       }
@@ -561,10 +626,46 @@ export default function Page() {
                         onChange={(f) => {
                           setPhotos((prev) => ({ ...prev, [key]: f }));
                           resetSubmit();
+                          if (key === "exteriorNameplate") {
+                            if (f) void analyzeNameplate(f);
+                            else setDetection({ status: "idle" });
+                          }
                         }}
                       />
                     ))}
                   </div>
+
+                  {detection.status === "loading" && (
+                    <div className="status loading">{t.detecting}</div>
+                  )}
+
+                  {detection.status === "done" && (
+                    <div className="detect-card">
+                      <div className="detect-title">{t.detectedTitle}</div>
+                      <div className="detect-desc">{detection.description}</div>
+                      {replaceChoice === "" ? (
+                        <>
+                          <div className="detect-question">
+                            {t.detectedQuestion}
+                          </div>
+                          <div className="detect-actions">
+                            <button type="button" onClick={confirmReplace}>
+                              {t.detectedYes}
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary"
+                              onClick={() => setReplaceChoice("no")}
+                            >
+                              {t.detectedNo}
+                            </button>
+                          </div>
+                        </>
+                      ) : replaceChoice === "yes" ? (
+                        <div className="detect-applied">{t.detectedApplied}</div>
+                      ) : null}
+                    </div>
+                  )}
 
                   <button
                     type="button"

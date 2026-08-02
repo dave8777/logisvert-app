@@ -162,6 +162,8 @@ export async function POST(request: Request) {
   const postal = String(form.get("postal") ?? "").trim().slice(0, 12);
   const notes = String(form.get("notes") ?? "").trim().slice(0, 500);
   const honeypot = String(form.get("website") ?? "").trim();
+  const detectedUnit = String(form.get("detectedUnit") ?? "").trim().slice(0, 200);
+  const replaceConfirmed = String(form.get("replaceConfirmed") ?? "").trim();
   const systemType = String(form.get("systemType") ?? "") as SystemType;
   const sizeKey = String(form.get("sizeKey") ?? "").trim();
   const installationType = String(form.get("installationType") ?? "").trim();
@@ -297,6 +299,7 @@ export async function POST(request: Request) {
       `<p><strong>${name}</strong> — <a href="tel:${phone}">${phone}</a> · ${email}</p>
 <p>${[address, city, postal].filter(Boolean).join(", ")}${inArea === false ? " — <strong>HORS ZONE</strong>" : ""}</p>
 <p>Demande : ${selectionLabel} (${installationType || "type non précisé"})</p>
+${detectedUnit ? `<p>Unité existante détectée (OCR) : ${detectedUnit}${replaceConfirmed === "yes" ? " — remplacement confirmé par le client" : replaceConfirmed === "no" ? " — le client ne remplace PAS cette unité" : ""}</p>` : ""}
 <p>${officeRows}</p>
 ${notes ? `<p>Notes : ${notes}</p>` : ""}
 <p>${photos.length} photo(s) reçue(s) — voir https://app.dpsdair.ca/admin</p>`
@@ -317,6 +320,9 @@ ${notes ? `<p>Notes : ${notes}</p>` : ""}
     },
     notes: notes || null,
     inArea,
+    detected: detectedUnit
+      ? { description: detectedUnit, replaceConfirmed: replaceConfirmed || null }
+      : null,
     selection: {
       systemType,
       sizeKey,

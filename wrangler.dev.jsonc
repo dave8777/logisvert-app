@@ -1,3 +1,7 @@
+// Config pour le développement LOCAL seulement (`wrangler dev -c wrangler.dev.jsonc`).
+// Identique à wrangler.jsonc SANS la liaison Workers AI : celle-ci n'a pas de
+// simulateur local et exige une connexion au compte Cloudflare. Sans elle,
+// l'API /api/nameplate répond `reading: null` (dégradation prévue).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "logisvert-calculator",
@@ -13,8 +17,5 @@
       "binding": "UPLOADS",
       "bucket_name": "dpsd-estimates"
     }
-  ],
-  "ai": {
-    "binding": "AI"
-  }
+  ]
 }

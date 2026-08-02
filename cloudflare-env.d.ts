@@ -25,7 +25,11 @@ interface CloudflareEnv {
       truncated: boolean;
       cursor?: string;
     }>;
+    delete(key: string): Promise<void>;
   };
   ADMIN_KEY?: string;
   RESEND_API_KEY?: string;
+  AI?: {
+    run(model: string, inputs: Record<string, unknown>): Promise<unknown>;
+  };
 }

@@ -16,6 +16,7 @@ type SubmissionRecord = {
   };
   notes?: string | null;
   inArea?: boolean | null;
+  detected?: { description: string; replaceConfirmed: string | null } | null;
   selection: {
     label?: string;
     line?: string;
@@ -83,6 +84,26 @@ export default function AdminPage() {
 
   function fileUrl(path: string) {
     return `/api/admin/file?key=${encodeURIComponent(savedKey ?? "")}&path=${encodeURIComponent(path)}`;
+  }
+
+  async function deleteRecord(r: SubmissionRecord) {
+    const sure = window.confirm(
+      `Supprimer définitivement la demande de ${r.contact.name} (photos incluses)?`
+    );
+    if (!sure) return;
+    try {
+      const res = await fetch(
+        `/api/admin/delete?key=${encodeURIComponent(savedKey ?? "")}&id=${encodeURIComponent(r.id)}&date=${encodeURIComponent(r.submittedAt.slice(0, 10))}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.error || "Échec de la suppression.");
+      }
+      setRecords((prev) => (prev ?? []).filter((x) => x.id !== r.id));
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Échec de la suppression.");
+    }
   }
 
   return (
@@ -199,6 +220,19 @@ export default function AdminPage() {
                                 : "À confirmer"}
                           </div>
                         </div>
+                        {r.detected ? (
+                          <div className="info-card">
+                            <div className="label">Unité existante (OCR)</div>
+                            <div className="value">
+                              {r.detected.description}
+                              {r.detected.replaceConfirmed === "yes"
+                                ? " — remplacement confirmé"
+                                : r.detected.replaceConfirmed === "no"
+                                  ? " — pas un remplacement"
+                                  : ""}
+                            </div>
+                          </div>
+                        ) : null}
                         {r.notes ? (
                           <div className="info-card">
                             <div className="label">Notes du client</div>
@@ -206,7 +240,7 @@ export default function AdminPage() {
                           </div>
                         ) : null}
                       </div>
-                      <div style={{ marginTop: "0.9rem", display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
+                      <div style={{ marginTop: "0.9rem", display: "flex", gap: "0.8rem", flexWrap: "wrap", alignItems: "center" }}>
                         {Object.entries(r.photos).map(([field, path]) => (
                           <a
                             key={field}
@@ -227,6 +261,24 @@ export default function AdminPage() {
                             />
                           </a>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => void deleteRecord(r)}
+                          style={{
+                            marginLeft: "auto",
+                            border: "1px solid #f3c4c4",
+                            background: "#fdf1f1",
+                            color: "#a33a3a",
+                            borderRadius: 999,
+                            padding: "0.45rem 1.1rem",
+                            fontWeight: 600,
+                            fontSize: "0.85rem",
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Supprimer
+                        </button>
                       </div>
                     </div>
                   ))}
