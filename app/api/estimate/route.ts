@@ -137,14 +137,14 @@ function clientEmailHtml(
 <p>Merci pour votre demande. Voici vos fourchettes approximatives pour : <strong>${selectionLabel}</strong> — installation complète, taxes incluses.</p>
 ${rows}
 ${docLink}
-<p>Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier, et nous nous occupons de tous les documents LogisVert pour vous.</p>
+<p>Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier. Après l'installation, vous recevrez votre dossier de fermeture complet (facture, photos des plaques de série et guide LogisVert) pour votre demande de subvention — et nous enregistrons votre garantie Gree pour vous.</p>
 <p>Des questions? Appelez-nous au ${PHONE_DISPLAY}.</p>
 <p>— Groupe DPSD Inc<br>RBQ : 5733-3916-01 · Membre de la CMMTQ<br>https://dpsdair.ca</p>`
     : `<p>Hello ${name},</p>
 <p>Thank you for your request. Here are your ballpark ranges for: <strong>${selectionLabel}</strong> — complete installation, taxes included.</p>
 ${rows}
 ${docLink}
-<p>Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it, and we handle all the LogisVert paperwork for you.</p>
+<p>Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it. After installation, you'll receive your complete close-out package (invoice, serial-plate photos and LogisVert guide) for your rebate application — and we register your Gree warranty for you.</p>
 <p>Questions? Call us at ${PHONE_DISPLAY}.</p>
 <p>— Groupe DPSD Inc<br>RBQ: 5733-3916-01 · CMMTQ member<br>https://dpsdair.ca</p>`;
   return { subject, html };

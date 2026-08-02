@@ -62,7 +62,8 @@ const S = {
       "Support, fouet électrique et sectionneur",
       "Garantie 10+2 ans sur les pièces et le compresseur",
       "Garantie main-d'œuvre de 1 an",
-      "Tous les documents pour votre demande LogisVert",
+      "Guide et documents remis pour votre demande LogisVert",
+      "Enregistrement de la garantie Gree fait pour vous",
     ],
     includedRemoval: "Enlèvement et disposition des anciens équipements",
     includedHandler: [
@@ -108,7 +109,8 @@ const S = {
       "Rack, electrical whip and disconnect",
       "10+2 year warranty on parts and compressor",
       "1 year labor warranty",
-      "All documents for your LogisVert rebate application",
+      "Guide and documents provided for your LogisVert application",
+      "Gree warranty registration handled for you",
     ],
     includedRemoval: "Removal and disposal of the old equipment",
     includedHandler: [

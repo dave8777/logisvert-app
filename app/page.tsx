@@ -108,7 +108,8 @@ const STRINGS = {
     resultsSub:
       "Installation complète, taxes incluses. Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement.",
     subsidyLine: "Subvention LogisVert admissible :",
-    subsidyNote: "On s'occupe de tous les documents pour vous.",
+    subsidyNote:
+      "Après l'installation : dossier de fermeture complet (facture, photos, guide LogisVert) et garantie Gree enregistrée pour vous.",
     notOffered: "Non offert dans cette capacité",
     brochure: "Brochure (PDF)",
     emailedNote: "Une copie de vos estimations a été envoyée à votre courriel.",
@@ -182,7 +183,8 @@ const STRINGS = {
     resultsSub:
       "Complete installation, taxes included. Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly.",
     subsidyLine: "Eligible LogisVert rebate:",
-    subsidyNote: "We handle all the paperwork for you.",
+    subsidyNote:
+      "After installation: complete close-out package (invoice, photos, LogisVert guide) and your Gree warranty registered for you.",
     notOffered: "Not offered in this capacity",
     brochure: "Brochure (PDF)",
     emailedNote: "A copy of your estimates has been sent to your email.",
