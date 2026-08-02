@@ -139,10 +139,10 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, id: "ok", estimate: null, subsidy: null });
   }
 
-  if (!name || !phone || !postal) {
+  if (!name || !phone || !email || !postal) {
     return err(
-      "Le nom, le téléphone et le code postal sont requis.",
-      "Name, phone number and postal code are required."
+      "Le nom, le téléphone, le courriel et le code postal sont requis.",
+      "Name, phone number, email and postal code are required."
     );
   }
 
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
     contact: {
       name,
       phone,
-      email: email || null,
+      email,
       address: address || null,
       city: city || null,
       postal,

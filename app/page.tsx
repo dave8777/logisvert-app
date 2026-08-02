@@ -58,8 +58,8 @@ const STRINGS = {
     contactSection: "Vos coordonnées",
     nameLabel: "Nom complet",
     phoneLabel: "Téléphone",
-    emailLabel: "Courriel (optionnel)",
-    addressLabel: "Adresse d’installation",
+    emailLabel: "Courriel",
+    addressLabel: "Adresse d’installation (optionnel)",
     cityLabel: "Ville",
     postalLabel: "Code postal",
     notesLabel: "Détails ou questions (optionnel)",
@@ -76,13 +76,12 @@ const STRINGS = {
     optional: "(optionnel)",
     newInstallPhotoHint:
       "Nouvelle installation? Envoyez plutôt des photos des emplacements prévus.",
-    emailHint:
-      "Indiquez votre courriel pour recevoir une copie de votre estimation.",
+    emailHint: "Votre estimation vous sera envoyée à ce courriel.",
     emailedNote: "Une copie de votre estimation a été envoyée à votre courriel.",
     getEstimate: "Obtenir mon estimation",
     submitting: "Envoi des photos en cours…",
     missingFields:
-      "Veuillez indiquer votre nom, votre téléphone, votre code postal et téléverser la photo de la plaque extérieure.",
+      "Veuillez indiquer votre nom, votre téléphone, votre courriel, votre code postal et téléverser la photo de la plaque extérieure.",
     estimateTitle: "Fourchette estimée — installation complète, taxes incluses",
     estimateNote:
       "Estimation approximative à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier.",
@@ -121,8 +120,8 @@ const STRINGS = {
     contactSection: "Your contact information",
     nameLabel: "Full name",
     phoneLabel: "Phone",
-    emailLabel: "Email (optional)",
-    addressLabel: "Installation address",
+    emailLabel: "Email",
+    addressLabel: "Installation address (optional)",
     cityLabel: "City",
     postalLabel: "Postal code",
     notesLabel: "Details or questions (optional)",
@@ -139,12 +138,12 @@ const STRINGS = {
     optional: "(optional)",
     newInstallPhotoHint:
       "New installation? Send photos of the planned locations instead.",
-    emailHint: "Enter your email to receive a copy of your estimate.",
+    emailHint: "Your estimate will be sent to this email.",
     emailedNote: "A copy of your estimate has been sent to your email.",
     getEstimate: "Get my estimate",
     submitting: "Uploading your photos…",
     missingFields:
-      "Please enter your name, phone and postal code, and upload the outdoor nameplate photo.",
+      "Please enter your name, phone, email and postal code, and upload the outdoor nameplate photo.",
     estimateTitle: "Estimated range — complete installation, taxes included",
     estimateNote:
       "Ballpark estimate for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it.",
@@ -293,6 +292,7 @@ export default function Page() {
     Boolean(selectedOption) &&
     name.trim().length > 0 &&
     phone.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
     postal.trim().replace(/\s/g, "").length >= 3 &&
     photos.exteriorNameplate !== null;
 
