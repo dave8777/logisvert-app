@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   GREE_OPTIONS,
   LINE_ORDER,
@@ -9,6 +9,8 @@ import {
   type ProductLine,
 } from "../lib/gree-options";
 
+type Lang = "fr" | "en";
+
 type InstallationType =
   | "Remplacement d’une thermopompe existante"
   | "Nouvelle installation";
@@ -16,25 +18,114 @@ type InstallationType =
 type LookupState =
   | { status: "idle" }
   | { status: "loading" }
+  | { status: "pending" }
   | {
       status: "success";
       amount: number;
-      amountLabel?: string;
       installationDate: string;
       source?: string;
     }
-  | {
-      status: "error";
-      message: string;
-    };
+  | { status: "error"; message: string };
 
-const CURRENCY = new Intl.NumberFormat("fr-CA", {
-  style: "currency",
-  currency: "CAD",
-  maximumFractionDigits: 0,
-});
+const SITE_URL = "https://dpsdair.ca";
+const PHONE_DISPLAY = "(514) 969-8786";
+const PHONE_TEL = "+15149698786";
+const EMAIL = "renovationsdp@gmail.com";
+
+const STRINGS = {
+  fr: {
+    brandTag: "Airclimatisé, Chauffage, Ventilation",
+    backToSite: "← Retour au site",
+    title: "Calculateur de subvention LogisVert",
+    subtitle:
+      "Choisissez votre thermopompe Gree : le numéro AHRI est trouvé automatiquement et le montant d'aide financière est vérifié pour vous.",
+    installType: "Type d’installation",
+    installTypeReplace: "Remplacement d’une thermopompe existante",
+    installTypeNew: "Nouvelle installation",
+    installDate: "Date d’installation",
+    productLine: "Gamme de produit",
+    equipType: "Type d’équipement",
+    choose: "Choisir",
+    capacity: "Capacité",
+    completePrompt:
+      "Faites une sélection complète pour lancer la vérification LogisVert.",
+    noMatch: "Aucun modèle Gree correspondant trouvé.",
+    multiMatch: "Plusieurs combinaisons possibles — précisez votre choix :",
+    line: "Gamme",
+    type: "Type",
+    outdoorUnit: "Unité extérieure",
+    indoorUnit: "Unité intérieure",
+    ahriNumber: "Numéro AHRI du modèle",
+    quantityLabel: "Nombre d’appareils installés",
+    calculate: "Calculer l’aide financière",
+    idleNote: "Le montant s’affichera après la vérification.",
+    loading: "Vérification du montant en cours…",
+    successTitle: "Aide financière estimée",
+    foundFor: "Montant trouvé pour l’AHRI",
+    dateUsed: "Date d’installation utilisée :",
+    source: "Source :",
+    errorTitle: "La vérification a échoué",
+    pendingTitle: "Montant à confirmer",
+    pendingBody:
+      "Ce modèle est admissible, mais le montant exact dépend de votre situation. Contactez-nous et nous vous le confirmons rapidement — sans frais.",
+    pendingCta: "Appelez-nous : " + PHONE_DISPLAY,
+    footerNote: "Un service de Groupe DPSD Inc",
+    langToggle: "EN",
+  },
+  en: {
+    brandTag: "Air Conditioning, Heating, Ventilation",
+    backToSite: "← Back to site",
+    title: "LogisVert Rebate Calculator",
+    subtitle:
+      "Pick your Gree heat pump: the AHRI number is found automatically and the rebate amount is checked for you.",
+    installType: "Installation type",
+    installTypeReplace: "Replacement of an existing heat pump",
+    installTypeNew: "New installation",
+    installDate: "Installation date",
+    productLine: "Product line",
+    equipType: "Equipment type",
+    choose: "Select",
+    capacity: "Capacity",
+    completePrompt: "Complete your selection to run the LogisVert check.",
+    noMatch: "No matching Gree model found.",
+    multiMatch: "Several possible combinations — pick one:",
+    line: "Line",
+    type: "Type",
+    outdoorUnit: "Outdoor unit",
+    indoorUnit: "Indoor unit",
+    ahriNumber: "Model AHRI number",
+    quantityLabel: "Number of units installed",
+    calculate: "Calculate my rebate",
+    idleNote: "The amount will appear after the check.",
+    loading: "Checking the current amount…",
+    successTitle: "Estimated rebate",
+    foundFor: "Amount found for AHRI",
+    dateUsed: "Installation date used:",
+    source: "Source:",
+    errorTitle: "The check failed",
+    pendingTitle: "Amount to be confirmed",
+    pendingBody:
+      "This model is eligible, but the exact amount depends on your situation. Contact us and we'll confirm it quickly — free of charge.",
+    pendingCta: "Call us: " + PHONE_DISPLAY,
+    footerNote: "A service of Groupe DPSD Inc",
+    langToggle: "FR",
+  },
+} as const;
+
+const EQUIPMENT_LABELS_EN: Record<EquipmentType, string> = {
+  Murale: "Wall-mounted",
+  Cassette: "Cassette",
+  Console: "Console",
+  Gainable: "Ducted",
+  "Sans conduits": "Ductless",
+  "Avec conduits": "Ducted",
+  Mix: "Mixed",
+  "Air Handler": "Air handler",
+  "Cased Coil": "Cased coil",
+};
 
 export default function Page() {
+  const [lang, setLang] = useState<Lang>("fr");
   const [selectedLine, setSelectedLine] = useState<ProductLine>("Charmo");
   const [selectedType, setSelectedType] = useState<EquipmentType | "">("");
   const [selectedSize, setSelectedSize] = useState("");
@@ -45,6 +136,36 @@ export default function Page() {
     useState<InstallationType>("Remplacement d’une thermopompe existante");
   const [quantity, setQuantity] = useState(1);
   const [lookup, setLookup] = useState<LookupState>({ status: "idle" });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("lang") === "en") setLang("en");
+  }, []);
+
+  const t = STRINGS[lang];
+
+  const currency = useMemo(
+    () =>
+      new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", {
+        style: "currency",
+        currency: "CAD",
+        maximumFractionDigits: 0,
+      }),
+    [lang]
+  );
+
+  function equipmentLabel(type: EquipmentType): string {
+    return lang === "en" ? EQUIPMENT_LABELS_EN[type] : type;
+  }
+
+  function toggleLang() {
+    const next: Lang = lang === "fr" ? "en" : "fr";
+    setLang(next);
+    const url = new URL(window.location.href);
+    if (next === "en") url.searchParams.set("lang", "en");
+    else url.searchParams.delete("lang");
+    window.history.replaceState(null, "", url.toString());
+  }
 
   const lineOptions = useMemo(() => {
     return GREE_OPTIONS.filter((item) => item.line === selectedLine);
@@ -110,14 +231,21 @@ export default function Page() {
 
       if (!res.ok || !data.ok) {
         throw new Error(
-          data?.error || "Impossible de récupérer le montant actuel de LogisVert."
+          data?.error ||
+            (lang === "fr"
+              ? "Impossible de récupérer le montant actuel."
+              : "Unable to retrieve the current amount.")
         );
+      }
+
+      if (data.pending || data.amount === null) {
+        setLookup({ status: "pending" });
+        return;
       }
 
       setLookup({
         status: "success",
         amount: Number(data.amount ?? 0),
-        amountLabel: data.amountLabel,
         installationDate: data.installationDate ?? installationDate,
         source: data.source,
       });
@@ -127,293 +255,291 @@ export default function Page() {
         message:
           error instanceof Error
             ? error.message
-            : "Échec de la recherche en direct sur LogisVert.",
+            : lang === "fr"
+              ? "Échec de la vérification."
+              : "The check failed.",
       });
     }
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
-      <div className="mx-auto max-w-5xl p-4 md:p-8">
-        <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <h1 className="text-2xl font-bold md:text-3xl">
-            Calculateur Subvention Gree
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Choisissez votre unité dans vos propres listes. Le numéro AHRI est
-            inséré automatiquement puis envoyé à la recherche LogisVert.
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white p-5 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Type d’installation
-              </label>
-              <select
-                value={installationType}
-                onChange={(e) => {
-                  setInstallationType(e.target.value as InstallationType);
-                  resetLookup();
-                }}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
-              >
-                <option value="Remplacement d’une thermopompe existante">
-                  Remplacement d’une thermopompe existante
-                </option>
-                <option value="Nouvelle installation">Nouvelle installation</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Date d’installation
-              </label>
-              <input
-                type="date"
-                value={installationDate}
-                onChange={(e) => {
-                  setInstallationDate(e.target.value);
-                  resetLookup();
-                }}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-semibold">
-                Gamme de produit
-              </label>
-              <select
-                value={selectedLine}
-                onChange={(e) => handleLineChange(e.target.value as ProductLine)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
-              >
-                {LINE_ORDER.map((line) => (
-                  <option key={line} value={line}>
-                    {line}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {showTypeDropdown && (
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Type d’équipement
-                </label>
-                <select
-                  value={selectedType}
-                  onChange={(e) => {
-                    setSelectedType(e.target.value as EquipmentType);
-                    setSelectedSize("");
-                    resetLookup();
-                  }}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
-                >
-                  <option value="">Choisir</option>
-                  {equipmentTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold">Capacité</label>
-              <select
-                value={selectedSize}
-                onChange={(e) => {
-                  setSelectedSize(e.target.value);
-                  resetLookup();
-                }}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-500"
-              >
-                <option value="">Choisir</option>
-                {sizeOptions.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-            </div>
+    <>
+      <header className="site-header">
+        <div className="container header-inner">
+          <a className="brand" href={lang === "en" ? `${SITE_URL}/en/` : SITE_URL}>
+            <img src="/logo-mark.png" alt="Groupe DPSD" />
+            <span>
+              Groupe DPSD Inc
+              <small>{t.brandTag}</small>
+            </span>
+          </a>
+          <div className="header-actions">
+            <a
+              className="back-link"
+              href={lang === "en" ? `${SITE_URL}/en/` : SITE_URL}
+            >
+              {t.backToSite}
+            </a>
+            <button type="button" className="lang-switch" onClick={toggleLang}>
+              {t.langToggle}
+            </button>
           </div>
+        </div>
+      </header>
 
-          <div className="mt-6">
-            {!selectedSize ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                Faites une sélection complète pour lancer la recherche LogisVert.
-              </div>
-            ) : matchingOptions.length === 0 ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="font-semibold text-red-700">
-                  Aucun modèle Gree correspondant trouvé
-                </p>
-              </div>
-            ) : matchingOptions.length > 1 && !selectedOption ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="font-semibold text-amber-800">
-                  Plusieurs combinaisons possibles
-                </p>
-                <div className="mt-4 space-y-3">
-                  {matchingOptions.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedType(item.equipmentType);
-                        setSelectedSize(item.sizeLabel);
+      <main>
+        <section className="intro">
+          <div className="container">
+            <h1>{t.title}</h1>
+            <p>{t.subtitle}</p>
+          </div>
+        </section>
+
+        <section className="page-body">
+          <div className="container">
+            <div className="card">
+              <div className="form-grid">
+                <div className="field">
+                  <label>{t.installType}</label>
+                  <select
+                    value={installationType}
+                    onChange={(e) => {
+                      setInstallationType(e.target.value as InstallationType);
+                      resetLookup();
+                    }}
+                  >
+                    <option value="Remplacement d’une thermopompe existante">
+                      {t.installTypeReplace}
+                    </option>
+                    <option value="Nouvelle installation">
+                      {t.installTypeNew}
+                    </option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>{t.installDate}</label>
+                  <input
+                    type="date"
+                    value={installationDate}
+                    onChange={(e) => {
+                      setInstallationDate(e.target.value);
+                      resetLookup();
+                    }}
+                  />
+                </div>
+
+                <div className="field full">
+                  <label>{t.productLine}</label>
+                  <select
+                    value={selectedLine}
+                    onChange={(e) =>
+                      handleLineChange(e.target.value as ProductLine)
+                    }
+                  >
+                    {LINE_ORDER.map((line) => (
+                      <option key={line} value={line}>
+                        {line}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {showTypeDropdown && (
+                  <div className="field">
+                    <label>{t.equipType}</label>
+                    <select
+                      value={selectedType}
+                      onChange={(e) => {
+                        setSelectedType(e.target.value as EquipmentType);
+                        setSelectedSize("");
                         resetLookup();
                       }}
-                      className="w-full rounded-xl border border-amber-200 bg-white p-4 text-left transition hover:border-amber-400"
                     >
-                      <div className="font-semibold">
-                        {item.line} · {item.equipmentType} · {item.sizeLabel}
-                      </div>
-                      <div className="mt-1 text-sm text-slate-600">
-                        AHRI: {item.ahri}
-                      </div>
-                    </button>
-                  ))}
+                      <option value="">{t.choose}</option>
+                      {equipmentTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {equipmentLabel(type)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="field">
+                  <label>{t.capacity}</label>
+                  <select
+                    value={selectedSize}
+                    onChange={(e) => {
+                      setSelectedSize(e.target.value);
+                      resetLookup();
+                    }}
+                  >
+                    <option value="">{t.choose}</option>
+                    {sizeOptions.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            ) : selectedOption ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <InfoCard label="Gamme" value={selectedOption.line} />
-                  <InfoCard label="Type" value={selectedOption.equipmentType} />
-                  <InfoCard label="Capacité" value={selectedOption.sizeLabel} />
-                  <InfoCard label="AHRI" value={selectedOption.ahri} />
-                  <InfoCard
-                    label="Unité extérieure"
-                    value={selectedOption.outdoorUnit}
-                  />
-                  <InfoCard
-                    label="Unité intérieure"
-                    value={selectedOption.indoorUnit}
-                  />
-                </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold">
-                      Numéro AHRI du modèle
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedOption.ahri}
-                      readOnly
-                      className="w-full rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-base text-slate-700"
+              {!selectedSize ? (
+                <div className="status hint">{t.completePrompt}</div>
+              ) : matchingOptions.length === 0 ? (
+                <div className="status error">
+                  <strong>{t.noMatch}</strong>
+                </div>
+              ) : matchingOptions.length > 1 && !selectedOption ? (
+                <div className="status warn">
+                  {t.multiMatch}
+                  <div className="choice-list">
+                    {matchingOptions.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedType(item.equipmentType);
+                          setSelectedSize(item.sizeLabel);
+                          resetLookup();
+                        }}
+                      >
+                        <div className="title">
+                          {item.line} · {equipmentLabel(item.equipmentType)} ·{" "}
+                          {item.sizeLabel}
+                        </div>
+                        <div className="sub">AHRI: {item.ahri}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : selectedOption ? (
+                <div className="summary">
+                  <div className="summary-grid">
+                    <InfoCard label={t.line} value={selectedOption.line} />
+                    <InfoCard
+                      label={t.type}
+                      value={equipmentLabel(selectedOption.equipmentType)}
+                    />
+                    <InfoCard label={t.capacity} value={selectedOption.sizeLabel} />
+                    <InfoCard label="AHRI" value={selectedOption.ahri} />
+                    <InfoCard
+                      label={t.outdoorUnit}
+                      value={selectedOption.outdoorUnit}
+                    />
+                    <InfoCard
+                      label={t.indoorUnit}
+                      value={selectedOption.indoorUnit}
                     />
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold">
-                      Nombre d’appareils installés
-                    </label>
-                    <div className="flex items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 py-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuantity((prev) => Math.max(1, prev - 1));
-                          resetLookup();
-                        }}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 text-xl"
-                      >
-                        -
-                      </button>
-                      <div className="flex-1 text-center text-lg font-semibold">
-                        {quantity}
+                  <div className="form-grid" style={{ marginTop: "1.1rem" }}>
+                    <div className="field">
+                      <label>{t.ahriNumber}</label>
+                      <input type="text" value={selectedOption.ahri} readOnly />
+                    </div>
+
+                    <div className="field">
+                      <label>{t.quantityLabel}</label>
+                      <div className="stepper">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuantity((prev) => Math.max(1, prev - 1));
+                            resetLookup();
+                          }}
+                        >
+                          −
+                        </button>
+                        <span>{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuantity((prev) => prev + 1);
+                            resetLookup();
+                          }}
+                        >
+                          +
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuantity((prev) => prev + 1);
-                          resetLookup();
-                        }}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 text-xl"
-                      >
-                        +
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={handleLiveLookup}
-                  className="mt-5 w-full rounded-xl bg-blue-700 px-4 py-3 text-base font-semibold text-white transition hover:bg-blue-800"
-                >
-                  Calculer l’aide financière
-                </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleLiveLookup}
+                  >
+                    {t.calculate}
+                  </button>
 
-                <div className="mt-4">
                   {lookup.status === "idle" && (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
-                      Aucun montant n’est affiché tant que la recherche n’a pas été faite.
-                    </div>
+                    <div className="status hint">{t.idleNote}</div>
                   )}
 
                   {lookup.status === "loading" && (
-                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                      Recherche du montant actuel sur LogisVert...
-                    </div>
+                    <div className="status loading">{t.loading}</div>
                   )}
 
                   {lookup.status === "success" && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
-                      <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                        Aide financière actuelle
+                    <div className="result">
+                      <div className="kicker">{t.successTitle}</div>
+                      <div className="amount">{currency.format(lookup.amount)}</div>
+                      <p>
+                        {t.foundFor} {selectedOption.ahri}
                       </p>
-                      <h2 className="mt-1 text-3xl font-bold text-emerald-900">
-                        {CURRENCY.format(lookup.amount)}
-                      </h2>
-                      <p className="mt-2 text-sm text-emerald-800">
-                        Montant trouvé pour l’AHRI {selectedOption.ahri}
-                      </p>
-                      <p className="mt-1 text-xs text-emerald-700">
-                        Date d’installation utilisée : {lookup.installationDate}
+                      <p>
+                        {t.dateUsed} {lookup.installationDate}
                       </p>
                       {lookup.source ? (
-                        <p className="mt-1 text-xs text-emerald-700">
-                          Source : {lookup.source}
+                        <p>
+                          {t.source} {lookup.source}
                         </p>
                       ) : null}
                     </div>
                   )}
 
+                  {lookup.status === "pending" && (
+                    <div className="pending">
+                      <h3>{t.pendingTitle}</h3>
+                      <p>{t.pendingBody}</p>
+                      <a className="cta" href={`tel:${PHONE_TEL}`}>
+                        {t.pendingCta}
+                      </a>
+                    </div>
+                  )}
+
                   {lookup.status === "error" && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                      <p className="font-semibold text-red-700">
-                        Impossible de lire LogisVert en direct
-                      </p>
-                      <p className="mt-1 text-sm text-red-700">
-                        {lookup.message}
-                      </p>
+                    <div className="status error">
+                      <strong>{t.errorTitle}</strong>
+                      {lookup.message}
                     </div>
                   )}
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
+        </section>
+      </main>
+
+      <footer className="site-footer">
+        <div className="container footer-inner">
+          <span>{t.footerNote}</span>
+          <span>
+            <a href={`mailto:${EMAIL}`}>{EMAIL}</a> · {PHONE_DISPLAY}
+          </span>
         </div>
-      </div>
-    </main>
+      </footer>
+    </>
   );
 }
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase text-slate-500">
-        {label}
-      </div>
-      <div className="mt-1 break-all text-sm font-medium text-slate-900">
-        {value}
-      </div>
+    <div className="info-card">
+      <div className="label">{label}</div>
+      <div className="value">{value}</div>
     </div>
   );
 }
