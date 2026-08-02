@@ -7,18 +7,16 @@ import {
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
-// Zone de service DPSD — préfixes postaux (FSA), portés de l'application de
-// vente (noyau Vaudreuil-Soulanges + West Island).
-const SERVICE_FSA = new Set(
-  (
-    "J7V J6S J7T J0P J5W H9X H9H H9J H9K H9P H9R H9S " +
-    "H9W H9E H9G H9A H9B H9C H8Y H8Z"
-  ).split(" ")
-);
+// Zone de service DPSD — préfixes postaux (FSA). DÉSACTIVÉE tant que la
+// vraie liste n'est pas confirmée par le propriétaire : la liste héritée de
+// l'app de vente (Vaudreuil-Soulanges + West Island) était un exemple et
+// signalait à tort des clients « hors zone ». Pour réactiver : remplir
+// SERVICE_FSA avec les vrais préfixes et remettre le test dans inServiceArea.
+const SERVICE_FSA = new Set<string>([]);
 
 function inServiceArea(postal: string): boolean | null {
   const fsa = postal.replace(/\s/g, "").toUpperCase().slice(0, 3);
-  if (fsa.length < 3) return null;
+  if (fsa.length < 3 || SERVICE_FSA.size === 0) return null;
   return SERVICE_FSA.has(fsa);
 }
 
