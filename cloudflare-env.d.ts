@@ -32,6 +32,7 @@ interface CloudflareEnv {
   };
   ADMIN_KEY?: string;
   RESEND_API_KEY?: string;
+  GOOGLE_PLACES_API_KEY?: string;
   AI?: {
     run(model: string, inputs: Record<string, unknown>): Promise<unknown>;
   };
