@@ -5,6 +5,9 @@ interface R2ListedObject {
 }
 
 interface CloudflareEnv {
+  ASSETS?: {
+    fetch(request: Request): Promise<Response>;
+  };
   UPLOADS: {
     put(
       key: string,

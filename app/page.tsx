@@ -746,7 +746,7 @@ export default function Page() {
                       {submit.id && submit.date ? (
                         <a
                           className="doc-link"
-                          href={`/estimation?id=${submit.id}&date=${submit.date}&lang=${lang}`}
+                          href={`/api/estimate/pdf?id=${submit.id}&date=${submit.date}&lang=${lang}`}
                           target="_blank"
                           rel="noreferrer"
                         >

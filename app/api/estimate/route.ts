@@ -10,7 +10,8 @@ const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 // Zone de service DPSD, confirmée par le propriétaire (2026-08-02) :
 // West Island; Saint-Lazare et Les Cèdres (J7T); Hudson et Rigaud (J0P);
 // Vaudreuil-Dorion, Pincourt, L'Île-Perrot, Notre-Dame-de-l'Île-Perrot et
-// Terrasse-Vaudreuil (J7V); Lachine et LaSalle (H8N H8R H8S H8T).
+// Terrasse-Vaudreuil (J7V et J7W — Vaudreuil-Dorion est réparti sur les
+// deux); Lachine et LaSalle (H8N H8R H8S H8T).
 // J0P est un grand FSA rural qui déborde sur des villages voisins —
 // volontairement inclusif : mieux vaut accepter un village limitrophe que
 // refuser Hudson. D'autres secteurs au besoin.
@@ -18,7 +19,7 @@ const SERVICE_FSA = new Set(
   (
     "H8N H8R H8S H8T H8Y H8Z " +
     "H9A H9B H9C H9E H9G H9H H9J H9K H9P H9R H9S H9W H9X " +
-    "J7T J7V J0P"
+    "J7T J7V J7W J0P"
   ).split(" ")
 );
 
@@ -287,29 +288,30 @@ export async function POST(request: Request) {
   // Courriels (via Resend) : estimations au client, avis au propriétaire.
   // Un échec d'envoi ne bloque jamais la demande.
   let emailSent = false;
-  const docUrl = `https://app.dpsdair.ca/estimation?id=${id}&date=${submittedAt.slice(0, 10)}&lang=${lang}`;
+  const docUrl = `https://app.dpsdair.ca/api/estimate/pdf?id=${id}&date=${submittedAt.slice(0, 10)}&lang=${lang}`;
   if (env.RESEND_API_KEY) {
     const msg = clientEmailHtml(lang, name, selectionLabel, options, docUrl);
     emailSent = await sendEmail(env.RESEND_API_KEY, email, msg.subject, msg.html);
+    // Avis au propriétaire — toujours en anglais (préférence du proprio).
     const officeRows = namedOptions
       .filter((o) => o.available && o.estimate)
       .map(
         (o) =>
-          `${o.name} : ${money(o.estimate!.min, "fr")} – ${money(o.estimate!.max, "fr")}` +
-          (o.estimate!.subsidy ? ` (LogisVert ${money(o.estimate!.subsidy, "fr")})` : "")
+          `${OPTION_NAMES[o.key]?.en ?? o.key}: ${money(o.estimate!.min, "en")} – ${money(o.estimate!.max, "en")}` +
+          (o.estimate!.subsidy ? ` (LogisVert ${money(o.estimate!.subsidy, "en")})` : "")
       )
       .join("<br>");
     await sendEmail(
       env.RESEND_API_KEY,
       OWNER_EMAIL,
-      `Nouvelle demande d'estimation — ${name}${city ? ` (${city})` : ""}`,
+      `New estimate request — ${name}${city ? ` (${city})` : ""}`,
       `<p><strong>${name}</strong> — <a href="tel:${phone}">${phone}</a> · ${email}</p>
-<p>${[address, city, postal].filter(Boolean).join(", ")}${inArea === false ? " — <strong>HORS ZONE</strong>" : ""}</p>
-<p>Demande : ${selectionLabel} (${installationType || "type non précisé"})</p>
-${detectedUnit ? `<p>Unité existante détectée (OCR) : ${detectedUnit}${replaceConfirmed === "yes" ? " — remplacement confirmé par le client" : replaceConfirmed === "no" ? " — le client ne remplace PAS cette unité" : ""}</p>` : ""}
+<p>${[address, city, postal].filter(Boolean).join(", ")}${inArea === false ? " — <strong>OUT OF SERVICE AREA</strong>" : ""}</p>
+<p>Request: ${selectionLabel} (${installationType === "Nouvelle installation" ? "new installation" : "replacement"}) — client language: ${lang.toUpperCase()}</p>
+${detectedUnit ? `<p>Existing unit detected (OCR): ${detectedUnit}${replaceConfirmed === "yes" ? " — replacement confirmed by the client" : replaceConfirmed === "no" ? " — client is NOT replacing this unit" : ""}</p>` : ""}
 <p>${officeRows}</p>
-${notes ? `<p>Notes : ${notes}</p>` : ""}
-<p>${photos.length} photo(s) reçue(s) — voir https://app.dpsdair.ca/admin</p>`
+${notes ? `<p>Client notes: ${notes}</p>` : ""}
+<p><a href="${docUrl.replace("lang=" + lang, "lang=en")}">Estimate sheet (PDF)</a> · ${photos.length} photo(s) received — https://app.dpsdair.ca/admin</p>`
     );
   }
 
