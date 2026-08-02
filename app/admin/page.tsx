@@ -17,14 +17,21 @@ type SubmissionRecord = {
   notes?: string | null;
   inArea?: boolean | null;
   selection: {
-    line: string;
-    equipmentType: string;
-    sizeLabel: string;
-    ahri: string;
+    label?: string;
+    line?: string;
+    equipmentType?: string;
+    sizeLabel?: string;
+    ahri?: string;
     installationType: string;
     quantity: number;
   };
-  estimate: { min: number; max: number } | null;
+  options?: {
+    key: string;
+    name: string;
+    available: boolean;
+    estimate: { min: number; max: number; subsidy: number | null } | null;
+  }[];
+  estimate?: { min: number; max: number } | null;
   subsidy?: number | null;
   photos: Record<string, string>;
 };
@@ -162,23 +169,34 @@ export default function AdminPage() {
                           </div>
                         </div>
                         <div className="info-card">
-                          <div className="label">Système</div>
+                          <div className="label">Demande</div>
                           <div className="value">
-                            {r.selection.line} · {r.selection.equipmentType} ·{" "}
-                            {r.selection.sizeLabel} × {r.selection.quantity}
-                            {" — AHRI "}
-                            {r.selection.ahri}
+                            {r.selection.label ??
+                              `${r.selection.line ?? ""} · ${r.selection.equipmentType ?? ""} · ${r.selection.sizeLabel ?? ""} × ${r.selection.quantity}`}
+                            {" — "}
+                            {r.selection.installationType}
                           </div>
                         </div>
                         <div className="info-card">
-                          <div className="label">Estimation transmise</div>
+                          <div className="label">Estimations transmises</div>
                           <div className="value">
-                            {r.estimate
-                              ? `${CURRENCY.format(r.estimate.min)} – ${CURRENCY.format(r.estimate.max)}`
-                              : "À confirmer"}
-                            {r.subsidy
-                              ? ` · LogisVert ${CURRENCY.format(r.subsidy)}`
-                              : ""}
+                            {r.options
+                              ? r.options
+                                  .filter((o) => o.available && o.estimate)
+                                  .map(
+                                    (o) =>
+                                      `${o.name}: ${CURRENCY.format(o.estimate!.min)} – ${CURRENCY.format(o.estimate!.max)}` +
+                                      (o.estimate!.subsidy
+                                        ? ` (LogisVert ${CURRENCY.format(o.estimate!.subsidy)})`
+                                        : "")
+                                  )
+                                  .join(" · ")
+                              : r.estimate
+                                ? `${CURRENCY.format(r.estimate.min)} – ${CURRENCY.format(r.estimate.max)}` +
+                                  (r.subsidy
+                                    ? ` · LogisVert ${CURRENCY.format(r.subsidy)}`
+                                    : "")
+                                : "À confirmer"}
                           </div>
                         </div>
                         {r.notes ? (

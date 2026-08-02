@@ -350,6 +350,50 @@ a:hover { text-decoration: underline; }
 .choice-list .title { font-weight: 600; color: var(--navy); }
 .choice-list .sub { margin-top: 0.15rem; font-size: 0.82rem; color: var(--muted); }
 
+/* ===== Multi-option results ===== */
+.results { margin-top: 1.4rem; }
+.results h3 { color: var(--navy); font-size: 1.2rem; }
+.results-sub { margin: 0.4rem 0 1.1rem; font-size: 0.9rem; color: var(--muted); }
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.tier-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.tier-card.unavailable { opacity: 0.55; }
+.tier-photo { width: 100%; height: 110px; object-fit: contain; margin-bottom: 0.4rem; }
+.tier-name { font-weight: 700; color: var(--navy); font-size: 1.02rem; }
+.tier-tag { font-size: 0.8rem; color: var(--muted); }
+.tier-range {
+  margin-top: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #14573f;
+  letter-spacing: -0.01em;
+}
+.tier-subsidy {
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  background: #e7f3ec;
+  color: #14573f;
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+}
+.tier-brochure { margin-top: 0.5rem; font-size: 0.85rem; font-weight: 500; }
+.tier-none { margin-top: 0.6rem; font-size: 0.88rem; color: var(--muted); font-style: italic; }
+.results-note { margin-top: 0.9rem; font-size: 0.9rem; color: var(--muted); }
+.warn-note { color: #8a6516; }
+
 /* ===== Footer ===== */
 .site-footer {
   background: var(--navy-deep);

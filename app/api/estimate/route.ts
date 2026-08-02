@@ -1,6 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { GREE_OPTIONS } from "../../../lib/gree-options";
-import { estimateFor, subsidyFor } from "../../../lib/pricing";
+import {
+  buildQuote,
+  type QuoteOption,
+  type SystemType,
+} from "../../../lib/pricing";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
@@ -26,6 +29,40 @@ function sanitizeFileName(name: string): string {
 const EMAIL_FROM = "Groupe DPSD <estimation@dpsdair.ca>";
 const OWNER_EMAIL = "renovationsdp@gmail.com";
 const PHONE_DISPLAY = "(514) 969-8786";
+
+// Noms affichés des options, alignés sur l'application de vente.
+const OPTION_NAMES: Record<string, { fr: string; en: string; tagFr: string; tagEn: string }> = {
+  charmo: {
+    fr: "Gree Charmo",
+    en: "Gree Charmo",
+    tagFr: "Chauffage jusqu'à −25 °C",
+    tagEn: "Heating down to −25 °C",
+  },
+  clivia: {
+    fr: "Gree Clivia",
+    en: "Gree Clivia",
+    tagFr: "Chauffage jusqu'à −30 °C",
+    tagEn: "Heating down to −30 °C",
+  },
+  airy: {
+    fr: "Gree Airy",
+    en: "Gree Airy",
+    tagFr: "Chauffage jusqu'à −30 °C — haute efficacité",
+    tagEn: "Heating down to −30 °C — high efficiency",
+  },
+  handler: {
+    fr: "Système complet — ventilo-convecteur neuf",
+    en: "Complete system — new air handler",
+    tagFr: "Avec chauffage d'appoint électrique intégré",
+    tagEn: "With built-in electric backup heat",
+  },
+  coil: {
+    fr: "Sur fournaise existante — serpentin",
+    en: "On your existing furnace — cased coil",
+    tagFr: "Votre fournaise reste en appoint",
+    tagEn: "Your furnace stays as backup",
+  },
+};
 
 async function sendEmail(
   apiKey: string,
@@ -56,42 +93,45 @@ function money(amount: number, lang: string): string {
   }).format(amount);
 }
 
+function optionRowsHtml(options: QuoteOption[], lang: string): string {
+  const fr = lang === "fr";
+  return options
+    .filter((o) => o.available && o.estimate)
+    .map((o) => {
+      const names = OPTION_NAMES[o.key];
+      const e = o.estimate!;
+      const sub = e.subsidy
+        ? fr
+          ? ` — subvention LogisVert admissible : <strong>${money(e.subsidy, lang)}</strong>`
+          : ` — eligible LogisVert rebate: <strong>${money(e.subsidy, lang)}</strong>`
+        : "";
+      return `<p><strong>${fr ? names.fr : names.en}</strong> (${fr ? names.tagFr : names.tagEn})<br>${money(e.min, lang)} – ${money(e.max, lang)}${sub}</p>`;
+    })
+    .join("\n");
+}
+
 function clientEmailHtml(
   lang: string,
   name: string,
   selectionLabel: string,
-  estimate: { min: number; max: number } | null,
-  subsidy: number | null
+  options: QuoteOption[]
 ): { subject: string; html: string } {
   const fr = lang === "fr";
-  const range = estimate
-    ? `${money(estimate.min, lang)} – ${money(estimate.max, lang)}`
-    : fr
-      ? "à confirmer lors de notre appel"
-      : "to be confirmed when we call you";
-  const subsidyLine = subsidy
-    ? fr
-      ? `<p>Subvention LogisVert admissible : <strong>${money(subsidy, lang)}</strong> — nous nous occupons de tous les documents pour vous.</p>`
-      : `<p>Eligible LogisVert rebate: <strong>${money(subsidy, lang)}</strong> — we handle all the paperwork for you.</p>`
-    : "";
   const subject = fr
-    ? "Votre estimation — Groupe DPSD"
-    : "Your estimate — Groupe DPSD";
+    ? "Vos estimations — Groupe DPSD"
+    : "Your estimates — Groupe DPSD";
+  const rows = optionRowsHtml(options, lang);
   const html = fr
     ? `<p>Bonjour ${name},</p>
-<p>Merci pour votre demande d'estimation. Voici votre fourchette approximative pour :</p>
-<p><strong>${selectionLabel}</strong></p>
-<p style="font-size:1.4em"><strong>${range}</strong></p>
-<p>Installation complète, taxes incluses. Estimation à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier.</p>
-${subsidyLine}
+<p>Merci pour votre demande. Voici vos fourchettes approximatives pour : <strong>${selectionLabel}</strong> — installation complète, taxes incluses.</p>
+${rows}
+<p>Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier, et nous nous occupons de tous les documents LogisVert pour vous.</p>
 <p>Des questions? Appelez-nous au ${PHONE_DISPLAY}.</p>
 <p>— Groupe DPSD Inc<br>RBQ : 5733-3916-01 · Membre de la CMMTQ<br>https://dpsdair.ca</p>`
     : `<p>Hello ${name},</p>
-<p>Thank you for your estimate request. Here is your ballpark range for:</p>
-<p><strong>${selectionLabel}</strong></p>
-<p style="font-size:1.4em"><strong>${range}</strong></p>
-<p>Complete installation, taxes included. Ballpark estimate for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it.</p>
-${subsidyLine}
+<p>Thank you for your request. Here are your ballpark ranges for: <strong>${selectionLabel}</strong> — complete installation, taxes included.</p>
+${rows}
+<p>Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it, and we handle all the LogisVert paperwork for you.</p>
 <p>Questions? Call us at ${PHONE_DISPLAY}.</p>
 <p>— Groupe DPSD Inc<br>RBQ: 5733-3916-01 · CMMTQ member<br>https://dpsdair.ca</p>`;
   return { subject, html };
@@ -116,10 +156,35 @@ export async function POST(request: Request) {
   const postal = String(form.get("postal") ?? "").trim().slice(0, 12);
   const notes = String(form.get("notes") ?? "").trim().slice(0, 500);
   const honeypot = String(form.get("website") ?? "").trim();
-  const optionId = String(form.get("optionId") ?? "").trim();
+  const systemType = String(form.get("systemType") ?? "") as SystemType;
+  const sizeKey = String(form.get("sizeKey") ?? "").trim();
   const installationType = String(form.get("installationType") ?? "").trim();
   const quantity = Math.max(1, Number(form.get("quantity") ?? "1") || 1);
   const lang = form.get("lang") === "en" ? "en" : "fr";
+
+  const err = (fr: string, en: string, status = 400) =>
+    Response.json({ ok: false, error: lang === "fr" ? fr : en }, { status });
+
+  // Champ piège rempli = robot : on répond « succès » sans rien enregistrer.
+  if (honeypot) {
+    return Response.json({ ok: true, id: "ok", options: [] });
+  }
+
+  if (!name || !phone || !email || !postal) {
+    return err(
+      "Le nom, le téléphone, le courriel et le code postal sont requis.",
+      "Name, phone number, email and postal code are required."
+    );
+  }
+
+  if (systemType !== "murale" && systemType !== "centrale") {
+    return err("Type de système invalide.", "Invalid system type.");
+  }
+
+  const options = buildQuote(systemType, sizeKey, quantity);
+  if (!options) {
+    return err("Capacité invalide.", "Invalid capacity.");
+  }
 
   // Les cinq photos du relevé de site (portées de l'app de vente) —
   // seule la plaque signalétique extérieure est obligatoire.
@@ -130,26 +195,6 @@ export async function POST(request: Request) {
     "interiorUnit",
     "panel",
   ] as const;
-
-  const err = (fr: string, en: string, status = 400) =>
-    Response.json({ ok: false, error: lang === "fr" ? fr : en }, { status });
-
-  // Champ piège rempli = robot : on répond « succès » sans rien enregistrer.
-  if (honeypot) {
-    return Response.json({ ok: true, id: "ok", estimate: null, subsidy: null });
-  }
-
-  if (!name || !phone || !email || !postal) {
-    return err(
-      "Le nom, le téléphone, le courriel et le code postal sont requis.",
-      "Name, phone number, email and postal code are required."
-    );
-  }
-
-  const option = GREE_OPTIONS.find((item) => item.id === optionId);
-  if (!option) {
-    return err("Système introuvable.", "System not found.", 404);
-  }
 
   const photos: { field: string; file: File }[] = [];
   for (const field of PHOTO_FIELDS) {
@@ -203,9 +248,54 @@ export async function POST(request: Request) {
     storedPhotos[field] = key;
   }
 
-  const estimate = estimateFor(option, quantity);
-  const subsidy = subsidyFor(option, quantity);
   const inArea = inServiceArea(postal);
+
+  const sizeLabelFr =
+    systemType === "murale"
+      ? `${sizeKey.replace("k", " 000")} BTU`
+      : `${sizeKey} tonnes`;
+  const selectionLabel =
+    (systemType === "murale"
+      ? lang === "fr"
+        ? `Thermopompe murale ${sizeLabelFr}`
+        : `Wall-mounted heat pump ${sizeKey.replace("k", ",000")} BTU`
+      : lang === "fr"
+        ? `Thermopompe centrale ${sizeKey} tonnes`
+        : `Central heat pump ${sizeKey} tons`) +
+    (quantity > 1 ? ` × ${quantity}` : "");
+
+  // Options nommées pour le dossier et le bureau.
+  const namedOptions = options.map((o) => ({
+    ...o,
+    name: OPTION_NAMES[o.key]?.fr ?? o.key,
+  }));
+
+  // Courriels (via Resend) : estimations au client, avis au propriétaire.
+  // Un échec d'envoi ne bloque jamais la demande.
+  let emailSent = false;
+  if (env.RESEND_API_KEY) {
+    const msg = clientEmailHtml(lang, name, selectionLabel, options);
+    emailSent = await sendEmail(env.RESEND_API_KEY, email, msg.subject, msg.html);
+    const officeRows = namedOptions
+      .filter((o) => o.available && o.estimate)
+      .map(
+        (o) =>
+          `${o.name} : ${money(o.estimate!.min, "fr")} – ${money(o.estimate!.max, "fr")}` +
+          (o.estimate!.subsidy ? ` (LogisVert ${money(o.estimate!.subsidy, "fr")})` : "")
+      )
+      .join("<br>");
+    await sendEmail(
+      env.RESEND_API_KEY,
+      OWNER_EMAIL,
+      `Nouvelle demande d'estimation — ${name}${city ? ` (${city})` : ""}`,
+      `<p><strong>${name}</strong> — <a href="tel:${phone}">${phone}</a> · ${email}</p>
+<p>${[address, city, postal].filter(Boolean).join(", ")}${inArea === false ? " — <strong>HORS ZONE</strong>" : ""}</p>
+<p>Demande : ${selectionLabel} (${installationType || "type non précisé"})</p>
+<p>${officeRows}</p>
+${notes ? `<p>Notes : ${notes}</p>` : ""}
+<p>${photos.length} photo(s) reçue(s) — voir https://app.dpsdair.ca/admin</p>`
+    );
+  }
 
   const record = {
     id,
@@ -222,57 +312,24 @@ export async function POST(request: Request) {
     notes: notes || null,
     inArea,
     selection: {
-      optionId: option.id,
-      line: option.line,
-      equipmentType: option.equipmentType,
-      sizeLabel: option.sizeLabel,
-      ahri: option.ahri,
-      outdoorUnit: option.outdoorUnit,
-      indoorUnit: option.indoorUnit,
+      systemType,
+      sizeKey,
+      label: selectionLabel,
       installationType,
       quantity,
     },
-    estimate,
-    subsidy,
+    options: namedOptions,
+    emailSent,
     photos: storedPhotos,
   };
 
-  // Courriels (via Resend) : copie de l'estimation au client s'il a donné
-  // son courriel, et avis de nouvelle demande au propriétaire. Un échec
-  // d'envoi ne bloque jamais la demande.
-  let emailSent = false;
-  const selectionLabel =
-    `Gree ${option.line} ${option.equipmentType} ${option.sizeLabel}` +
-    (quantity > 1 ? ` × ${quantity}` : "");
-  if (env.RESEND_API_KEY) {
-    if (email) {
-      const msg = clientEmailHtml(lang, name, selectionLabel, estimate, subsidy);
-      emailSent = await sendEmail(env.RESEND_API_KEY, email, msg.subject, msg.html);
-    }
-    const rangeTxt = estimate
-      ? `${money(estimate.min, "fr")} – ${money(estimate.max, "fr")}`
-      : "à confirmer";
-    await sendEmail(
-      env.RESEND_API_KEY,
-      OWNER_EMAIL,
-      `Nouvelle demande d'estimation — ${name}${city ? ` (${city})` : ""}`,
-      `<p><strong>${name}</strong> — <a href="tel:${phone}">${phone}</a>${email ? ` · ${email}` : ""}</p>
-<p>${[address, city, postal].filter(Boolean).join(", ")}${inArea === false ? " — <strong>HORS ZONE</strong>" : ""}</p>
-<p>Système : ${selectionLabel} — AHRI ${option.ahri}</p>
-<p>Estimation transmise : ${rangeTxt}${subsidy ? ` · LogisVert ${money(subsidy, "fr")}` : ""}</p>
-${notes ? `<p>Notes : ${notes}</p>` : ""}
-<p>${photos.length} photo(s) reçue(s) — voir https://app.dpsdair.ca/admin</p>`
-    );
-  }
-
-  const finalRecord = { ...record, emailSent };
   await env.UPLOADS.put(
     `${prefix}/record.json`,
-    JSON.stringify(finalRecord, null, 2),
+    JSON.stringify(record, null, 2),
     {
       httpMetadata: { contentType: "application/json" },
     }
   );
 
-  return Response.json({ ok: true, id, estimate, subsidy, inArea, emailSent });
+  return Response.json({ ok: true, id, options, inArea, emailSent });
 }

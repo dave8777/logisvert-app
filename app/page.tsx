@@ -1,27 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  GREE_OPTIONS,
-  LINE_ORDER,
-  type EquipmentType,
-  type GreeOption,
-  type ProductLine,
-} from "../lib/gree-options";
 
 type Lang = "fr" | "en";
+type SystemType = "murale" | "centrale";
 
 type InstallationType =
   | "Remplacement d’une thermopompe existante"
   | "Nouvelle installation";
+
+type ResultOption = {
+  key: string;
+  available: boolean;
+  estimate: { min: number; max: number; subsidy: number | null } | null;
+};
 
 type SubmitState =
   | { status: "idle" }
   | { status: "submitting" }
   | {
       status: "done";
-      estimate: { min: number; max: number } | null;
-      subsidy: number | null;
+      options: ResultOption[];
       inArea: boolean | null;
       emailSent: boolean;
     }
@@ -32,42 +31,57 @@ const PHONE_DISPLAY = "(514) 969-8786";
 const PHONE_TEL = "+15149698786";
 const EMAIL = "renovationsdp@gmail.com";
 
+const WALL_SIZES = ["12k", "18k", "24k", "36k"] as const;
+const CENTRAL_TONS = ["2", "3", "4", "5"] as const;
+
+// Visuel, marque et brochure par option (mêmes ressources que le site).
+const OPTION_META: Record<
+  string,
+  { photo: string; logo: string | null; brochure: string | null }
+> = {
+  charmo: { photo: "/products/charmo.png", logo: "/products/charmologo.png", brochure: "charmo" },
+  clivia: { photo: "/products/clivia.png", logo: "/products/clivialogo.png", brochure: "clivia" },
+  airy: { photo: "/products/airy.png", logo: "/products/airylogo.png", brochure: "airy" },
+  handler: { photo: "/products/airhandler.png", logo: "/products/flexxlogo.png", brochure: "flexx" },
+  coil: { photo: "/products/coil.png", logo: "/products/flexxlogo.png", brochure: "flexx" },
+};
+
 const STRINGS = {
   fr: {
     brandTag: "Airclimatisé, Chauffage, Ventilation",
     backToSite: "← Retour au site",
     title: "Estimation en ligne",
     subtitle:
-      "Choisissez votre système Gree, téléversez une photo de la plaque signalétique de votre équipement actuel et obtenez une fourchette de prix approximative.",
+      "Choisissez votre type de système, téléversez quelques photos et recevez vos fourchettes de prix — toutes les options d'un coup, comme en magasin.",
     installType: "Type d’installation",
     installTypeReplace: "Remplacement d’une thermopompe existante",
     installTypeNew: "Nouvelle installation",
-    productLine: "Gamme de produit",
-    equipType: "Type d’équipement",
-    choose: "Choisir",
+    systemType: "Type de système",
+    systemWall: "Thermopompe murale",
+    systemCentral: "Thermopompe centrale (conduits d'air)",
     capacity: "Capacité",
-    completePrompt:
-      "Faites une sélection complète pour continuer vers l’estimation.",
-    noMatch: "Aucun modèle Gree correspondant trouvé.",
-    multiMatch: "Plusieurs combinaisons possibles — précisez votre choix :",
-    line: "Gamme",
-    type: "Type",
-    outdoorUnit: "Unité extérieure",
-    indoorUnit: "Unité intérieure",
+    choose: "Choisir",
+    wallSize: (s: string) => `${s.replace("k", " 000")} BTU`,
+    centralSize: (t: string) => `${t} tonnes`,
     quantityLabel: "Nombre d’appareils",
+    multizoneNote:
+      "Projet multizone (plusieurs pièces sur une seule unité extérieure)? Ces projets sont sur mesure —",
+    multizoneCall: "appelez-nous",
+    completePrompt: "Choisissez la capacité pour continuer.",
     contactSection: "Vos coordonnées",
     nameLabel: "Nom complet",
     phoneLabel: "Téléphone",
     emailLabel: "Courriel",
+    emailHint: "Vos estimations vous seront envoyées à ce courriel.",
     addressLabel: "Adresse d’installation (optionnel)",
     cityLabel: "Ville",
     postalLabel: "Code postal",
     notesLabel: "Détails ou questions (optionnel)",
     outOfArea:
-      "Votre secteur semble à l'extérieur de notre zone de service habituelle — envoyez votre demande quand même et nous confirmerons si nous pouvons vous servir.",
+      "Votre secteur semble à l'extérieur de notre zone de service habituelle — nous confirmerons si nous pouvons vous servir.",
     photosSection: "Photos de votre installation",
     photoHint:
-      "La plaque signalétique est l’étiquette (souvent métallique) collée sur l’appareil, avec le numéro de modèle et de série. Plus vous fournissez de photos, plus votre estimation sera précise.",
+      "La plaque signalétique est l’étiquette (souvent métallique) collée sur l’appareil, avec le numéro de modèle et de série. Plus vous fournissez de photos, plus vos estimations seront précises.",
     photoExtNameplate: "Plaque signalétique — unité extérieure",
     photoExtUnit: "Unité extérieure — vue d’ensemble",
     photoIntNameplate: "Plaque signalétique — unité intérieure",
@@ -76,23 +90,26 @@ const STRINGS = {
     optional: "(optionnel)",
     newInstallPhotoHint:
       "Nouvelle installation? Envoyez plutôt des photos des emplacements prévus.",
-    emailHint: "Votre estimation vous sera envoyée à ce courriel.",
-    emailedNote: "Une copie de votre estimation a été envoyée à votre courriel.",
-    getEstimate: "Obtenir mon estimation",
+    getEstimate: "Obtenir mes estimations",
     submitting: "Envoi des photos en cours…",
     missingFields:
       "Veuillez indiquer votre nom, votre téléphone, votre courriel, votre code postal et téléverser la photo de la plaque extérieure.",
-    estimateTitle: "Fourchette estimée — installation complète, taxes incluses",
-    estimateNote:
-      "Estimation approximative à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement pour la planifier.",
+    resultsTitle: "Vos fourchettes estimées",
+    resultsSub:
+      "Installation complète, taxes incluses. Estimations à titre indicatif seulement — le prix final est confirmé lors d'une visite sur place. Nous vous contactons rapidement.",
     subsidyLine: "Subvention LogisVert admissible :",
     subsidyNote: "On s'occupe de tous les documents pour vous.",
-    brochure: "Télécharger la brochure (PDF)",
-    pendingTitle: "Photos bien reçues!",
-    pendingBody:
-      "Merci! Nous vérifions votre équipement et vous rappelons rapidement pour planifier une visite et confirmer votre prix — sans frais.",
-    callUs: "Appelez-nous : " + PHONE_DISPLAY,
+    notOffered: "Non offert dans cette capacité",
+    brochure: "Brochure (PDF)",
+    emailedNote: "Une copie de vos estimations a été envoyée à votre courriel.",
     errorTitle: "L’envoi a échoué",
+    optionNames: {
+      charmo: ["Gree Charmo", "Chauffage jusqu'à −25 °C"],
+      clivia: ["Gree Clivia", "Chauffage jusqu'à −30 °C"],
+      airy: ["Gree Airy", "−30 °C — haute efficacité"],
+      handler: ["Système complet", "Ventilo-convecteur neuf + appoint électrique"],
+      coil: ["Sur fournaise existante", "Serpentin — votre fournaise en appoint"],
+    } as Record<string, [string, string]>,
     footerNote: "Un service de Groupe DPSD Inc",
     langToggle: "EN",
   },
@@ -101,35 +118,36 @@ const STRINGS = {
     backToSite: "← Back to site",
     title: "Online Estimate",
     subtitle:
-      "Pick your Gree system, upload a photo of your current equipment's nameplate and get a ballpark price range.",
+      "Pick your system type, upload a few photos and get your price ranges — every option at once, just like in-store.",
     installType: "Installation type",
     installTypeReplace: "Replacement of an existing heat pump",
     installTypeNew: "New installation",
-    productLine: "Product line",
-    equipType: "Equipment type",
-    choose: "Select",
+    systemType: "System type",
+    systemWall: "Wall-mounted heat pump",
+    systemCentral: "Central heat pump (ductwork)",
     capacity: "Capacity",
-    completePrompt: "Complete your selection to continue to the estimate.",
-    noMatch: "No matching Gree model found.",
-    multiMatch: "Several possible combinations — pick one:",
-    line: "Line",
-    type: "Type",
-    outdoorUnit: "Outdoor unit",
-    indoorUnit: "Indoor unit",
+    choose: "Select",
+    wallSize: (s: string) => `${s.replace("k", ",000")} BTU`,
+    centralSize: (t: string) => `${t} tons`,
     quantityLabel: "Number of units",
+    multizoneNote:
+      "Multi-zone project (several rooms on one outdoor unit)? Those are custom quoted —",
+    multizoneCall: "call us",
+    completePrompt: "Pick the capacity to continue.",
     contactSection: "Your contact information",
     nameLabel: "Full name",
     phoneLabel: "Phone",
     emailLabel: "Email",
+    emailHint: "Your estimates will be sent to this email.",
     addressLabel: "Installation address (optional)",
     cityLabel: "City",
     postalLabel: "Postal code",
     notesLabel: "Details or questions (optional)",
     outOfArea:
-      "Your area looks like it's outside our usual service zone — send your request anyway and we'll confirm whether we can serve you.",
+      "Your area looks like it's outside our usual service zone — we'll confirm whether we can serve you.",
     photosSection: "Photos of your installation",
     photoHint:
-      "The nameplate is the label (often metal) on the unit showing the model and serial number. The more photos you provide, the more accurate your estimate.",
+      "The nameplate is the label (often metal) on the unit showing the model and serial number. The more photos you provide, the more accurate your estimates.",
     photoExtNameplate: "Nameplate — outdoor unit",
     photoExtUnit: "Outdoor unit — overall view",
     photoIntNameplate: "Nameplate — indoor unit",
@@ -138,73 +156,35 @@ const STRINGS = {
     optional: "(optional)",
     newInstallPhotoHint:
       "New installation? Send photos of the planned locations instead.",
-    emailHint: "Your estimate will be sent to this email.",
-    emailedNote: "A copy of your estimate has been sent to your email.",
-    getEstimate: "Get my estimate",
+    getEstimate: "Get my estimates",
     submitting: "Uploading your photos…",
     missingFields:
       "Please enter your name, phone, email and postal code, and upload the outdoor nameplate photo.",
-    estimateTitle: "Estimated range — complete installation, taxes included",
-    estimateNote:
-      "Ballpark estimate for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly to schedule it.",
+    resultsTitle: "Your estimated ranges",
+    resultsSub:
+      "Complete installation, taxes included. Ballpark estimates for guidance only — the final price is confirmed with an on-site visit. We'll contact you shortly.",
     subsidyLine: "Eligible LogisVert rebate:",
     subsidyNote: "We handle all the paperwork for you.",
-    brochure: "Download the brochure (PDF)",
-    pendingTitle: "Photos received!",
-    pendingBody:
-      "Thanks! We're reviewing your equipment and will call you back shortly to schedule a visit and confirm your price — free of charge.",
-    callUs: "Call us: " + PHONE_DISPLAY,
+    notOffered: "Not offered in this capacity",
+    brochure: "Brochure (PDF)",
+    emailedNote: "A copy of your estimates has been sent to your email.",
     errorTitle: "The submission failed",
+    optionNames: {
+      charmo: ["Gree Charmo", "Heating down to −25 °C"],
+      clivia: ["Gree Clivia", "Heating down to −30 °C"],
+      airy: ["Gree Airy", "−30 °C — high efficiency"],
+      handler: ["Complete system", "New air handler + electric backup"],
+      coil: ["On existing furnace", "Cased coil — your furnace as backup"],
+    } as Record<string, [string, string]>,
     footerNote: "A service of Groupe DPSD Inc",
     langToggle: "FR",
   },
 } as const;
 
-function familyKey(line: ProductLine): string {
-  if (line === "Flexx Central" || line === "Flexx Add-On") return "flexx";
-  return line.toLowerCase();
-}
-
-function productImage(option: GreeOption): string {
-  switch (option.equipmentType) {
-    case "Cassette":
-      return "/products/cassette.png";
-    case "Console":
-      return "/products/console.png";
-    case "Gainable":
-      return "/products/gainable.png";
-    case "Air Handler":
-      return "/products/airhandler.png";
-    case "Cased Coil":
-      return "/products/coil.png";
-    case "Sans conduits":
-    case "Avec conduits":
-    case "Mix":
-      return "/products/multizone.png";
-    default: {
-      const key = familyKey(option.line);
-      return `/products/${key === "flexx" ? "flexx36" : key}.png`;
-    }
-  }
-}
-
-const EQUIPMENT_LABELS_EN: Record<EquipmentType, string> = {
-  Murale: "Wall-mounted",
-  Cassette: "Cassette",
-  Console: "Console",
-  Gainable: "Ducted",
-  "Sans conduits": "Ductless",
-  "Avec conduits": "Ducted",
-  Mix: "Mixed",
-  "Air Handler": "Air handler",
-  "Cased Coil": "Cased coil",
-};
-
 export default function Page() {
   const [lang, setLang] = useState<Lang>("fr");
-  const [selectedLine, setSelectedLine] = useState<ProductLine>("Charmo");
-  const [selectedType, setSelectedType] = useState<EquipmentType | "">("");
-  const [selectedSize, setSelectedSize] = useState("");
+  const [systemType, setSystemType] = useState<SystemType>("murale");
+  const [sizeKey, setSizeKey] = useState("");
   const [installationType, setInstallationType] =
     useState<InstallationType>("Remplacement d’une thermopompe existante");
   const [quantity, setQuantity] = useState(1);
@@ -243,10 +223,6 @@ export default function Page() {
     [lang]
   );
 
-  function equipmentLabel(type: EquipmentType): string {
-    return lang === "en" ? EQUIPMENT_LABELS_EN[type] : type;
-  }
-
   function toggleLang() {
     const next: Lang = lang === "fr" ? "en" : "fr";
     setLang(next);
@@ -256,40 +232,11 @@ export default function Page() {
     window.history.replaceState(null, "", url.toString());
   }
 
-  const lineOptions = useMemo(() => {
-    return GREE_OPTIONS.filter((item) => item.line === selectedLine);
-  }, [selectedLine]);
-
-  const equipmentTypes = useMemo(() => {
-    return Array.from(new Set(lineOptions.map((item) => item.equipmentType)));
-  }, [lineOptions]);
-
-  const sizeOptions = useMemo(() => {
-    return Array.from(
-      new Set(
-        lineOptions
-          .filter((item) => !selectedType || item.equipmentType === selectedType)
-          .map((item) => item.sizeLabel)
-      )
-    );
-  }, [lineOptions, selectedType]);
-
-  const matchingOptions = useMemo(() => {
-    return lineOptions.filter((item) => {
-      const typeMatch = !selectedType || item.equipmentType === selectedType;
-      const sizeMatch = !selectedSize || item.sizeLabel === selectedSize;
-      return typeMatch && sizeMatch;
-    });
-  }, [lineOptions, selectedType, selectedSize]);
-
-  const selectedOption: GreeOption | null =
-    matchingOptions.length === 1 ? matchingOptions[0] : null;
-
-  const showTypeDropdown =
-    selectedLine !== "Flexx Central" && selectedLine !== "Flexx Add-On";
+  const sizeChoices: readonly string[] =
+    systemType === "murale" ? WALL_SIZES : CENTRAL_TONS;
 
   const formComplete =
-    Boolean(selectedOption) &&
+    sizeKey !== "" &&
     name.trim().length > 0 &&
     phone.trim().length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
@@ -300,15 +247,14 @@ export default function Page() {
     setSubmit({ status: "idle" });
   }
 
-  function handleLineChange(line: ProductLine) {
-    setSelectedLine(line);
-    setSelectedType("");
-    setSelectedSize("");
+  function handleSystemChange(next: SystemType) {
+    setSystemType(next);
+    setSizeKey("");
+    setQuantity(1);
     resetSubmit();
   }
 
   async function handleSubmit() {
-    if (!selectedOption) return;
     if (!formComplete) {
       setSubmit({ status: "error", message: t.missingFields });
       return;
@@ -326,9 +272,10 @@ export default function Page() {
       form.set("postal", postal.trim());
       form.set("notes", notes.trim());
       form.set("website", website);
-      form.set("optionId", selectedOption.id);
+      form.set("systemType", systemType);
+      form.set("sizeKey", sizeKey);
       form.set("installationType", installationType);
-      form.set("quantity", String(quantity));
+      form.set("quantity", String(systemType === "murale" ? quantity : 1));
       form.set("lang", lang);
       for (const [key, file] of Object.entries(photos)) {
         if (file) form.set(key, file);
@@ -346,8 +293,7 @@ export default function Page() {
 
       setSubmit({
         status: "done",
-        estimate: data.estimate ?? null,
-        subsidy: data.subsidy ?? null,
+        options: (data.options ?? []) as ResultOption[],
         inArea: data.inArea ?? null,
         emailSent: Boolean(data.emailSent),
       });
@@ -420,154 +366,79 @@ export default function Page() {
                 </div>
 
                 <div className="field">
-                  <label>{t.productLine}</label>
+                  <label>{t.systemType}</label>
                   <select
-                    value={selectedLine}
+                    value={systemType}
                     onChange={(e) =>
-                      handleLineChange(e.target.value as ProductLine)
+                      handleSystemChange(e.target.value as SystemType)
                     }
                   >
-                    {LINE_ORDER.map((line) => (
-                      <option key={line} value={line}>
-                        {line}
-                      </option>
-                    ))}
+                    <option value="murale">{t.systemWall}</option>
+                    <option value="centrale">{t.systemCentral}</option>
                   </select>
                 </div>
-
-                {showTypeDropdown && (
-                  <div className="field">
-                    <label>{t.equipType}</label>
-                    <select
-                      value={selectedType}
-                      onChange={(e) => {
-                        setSelectedType(e.target.value as EquipmentType);
-                        setSelectedSize("");
-                        resetSubmit();
-                      }}
-                    >
-                      <option value="">{t.choose}</option>
-                      {equipmentTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {equipmentLabel(type)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
 
                 <div className="field">
                   <label>{t.capacity}</label>
                   <select
-                    value={selectedSize}
+                    value={sizeKey}
                     onChange={(e) => {
-                      setSelectedSize(e.target.value);
+                      setSizeKey(e.target.value);
                       resetSubmit();
                     }}
                   >
                     <option value="">{t.choose}</option>
-                    {sizeOptions.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
+                    {sizeChoices.map((s) => (
+                      <option key={s} value={s}>
+                        {systemType === "murale"
+                          ? t.wallSize(s)
+                          : t.centralSize(s)}
                       </option>
                     ))}
                   </select>
                 </div>
-              </div>
 
-              {!selectedSize ? (
-                <div className="status hint">{t.completePrompt}</div>
-              ) : matchingOptions.length === 0 ? (
-                <div className="status error">
-                  <strong>{t.noMatch}</strong>
-                </div>
-              ) : matchingOptions.length > 1 && !selectedOption ? (
-                <div className="status warn">
-                  {t.multiMatch}
-                  <div className="choice-list">
-                    {matchingOptions.map((item) => (
+                {systemType === "murale" ? (
+                  <div className="field">
+                    <label>{t.quantityLabel}</label>
+                    <div className="stepper">
                       <button
-                        key={item.id}
                         type="button"
                         onClick={() => {
-                          setSelectedType(item.equipmentType);
-                          setSelectedSize(item.sizeLabel);
+                          setQuantity((prev) => Math.max(1, prev - 1));
                           resetSubmit();
                         }}
                       >
-                        <div className="title">
-                          {item.line} · {equipmentLabel(item.equipmentType)} ·{" "}
-                          {item.sizeLabel}
-                        </div>
-                        <div className="sub">AHRI: {item.ahri}</div>
+                        −
                       </button>
-                    ))}
-                  </div>
-                </div>
-              ) : selectedOption ? (
-                <div className="summary">
-                  <div className="product-row">
-                    <img
-                      className="product-shot"
-                      src={productImage(selectedOption)}
-                      alt={selectedOption.line}
-                    />
-                    <div className="product-meta">
-                      <img
-                        className="product-logo"
-                        src={`/products/${familyKey(selectedOption.line)}logo.png`}
-                        alt={selectedOption.line}
-                      />
-                      <a
-                        href={`/brochures/brochure-${familyKey(selectedOption.line)}-${lang}.pdf`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <span>{quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuantity((prev) => prev + 1);
+                          resetSubmit();
+                        }}
                       >
-                        {t.brochure}
-                      </a>
+                        +
+                      </button>
                     </div>
                   </div>
-                  <div className="summary-grid">
-                    <InfoCard label={t.line} value={selectedOption.line} />
-                    <InfoCard
-                      label={t.type}
-                      value={equipmentLabel(selectedOption.equipmentType)}
-                    />
-                    <InfoCard label={t.capacity} value={selectedOption.sizeLabel} />
-                    <InfoCard
-                      label={t.outdoorUnit}
-                      value={selectedOption.outdoorUnit}
-                    />
-                  </div>
+                ) : null}
+              </div>
 
-                  <div className="form-grid" style={{ marginTop: "1.1rem" }}>
-                    <div className="field">
-                      <label>{t.quantityLabel}</label>
-                      <div className="stepper">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setQuantity((prev) => Math.max(1, prev - 1));
-                            resetSubmit();
-                          }}
-                        >
-                          −
-                        </button>
-                        <span>{quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setQuantity((prev) => prev + 1);
-                            resetSubmit();
-                          }}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+              <p className="photo-hint" style={{ marginTop: "0.9rem" }}>
+                {t.multizoneNote}{" "}
+                <a href={`tel:${PHONE_TEL}`}>{t.multizoneCall}</a> —{" "}
+                {PHONE_DISPLAY}.
+              </p>
 
-                  <h3 className="section-title">{t.contactSection}</h3>
+              {!sizeKey ? (
+                <div className="status hint">{t.completePrompt}</div>
+              ) : (
+                <div className="summary">
+                  <h3 className="section-title" style={{ borderTop: "none", paddingTop: 0, marginTop: 0 }}>
+                    {t.contactSection}
+                  </h3>
                   <div className="form-grid">
                     <div className="field">
                       <label>{t.nameLabel}</label>
@@ -708,50 +579,75 @@ export default function Page() {
                     <div className="status hint">{t.missingFields}</div>
                   )}
 
-                  {submit.status === "done" && submit.estimate && (
-                    <div className="result">
-                      <div className="kicker">{t.estimateTitle}</div>
-                      <div className="amount">
-                        {currency.format(submit.estimate.min)} –{" "}
-                        {currency.format(submit.estimate.max)}
+                  {submit.status === "done" && (
+                    <div className="results">
+                      <h3>{t.resultsTitle}</h3>
+                      <p className="results-sub">{t.resultsSub}</p>
+                      <div className="tier-grid">
+                        {submit.options.map((o) => {
+                          const meta = OPTION_META[o.key];
+                          const [optName, optTag] = t.optionNames[o.key] ?? [
+                            o.key,
+                            "",
+                          ];
+                          return (
+                            <div
+                              key={o.key}
+                              className={`tier-card${o.available && o.estimate ? "" : " unavailable"}`}
+                            >
+                              {meta ? (
+                                <img
+                                  className="tier-photo"
+                                  src={meta.photo}
+                                  alt={optName}
+                                />
+                              ) : null}
+                              <div className="tier-name">{optName}</div>
+                              <div className="tier-tag">{optTag}</div>
+                              {o.available && o.estimate ? (
+                                <>
+                                  <div className="tier-range">
+                                    {currency.format(o.estimate.min)} –{" "}
+                                    {currency.format(o.estimate.max)}
+                                  </div>
+                                  {o.estimate.subsidy ? (
+                                    <div className="tier-subsidy">
+                                      {t.subsidyLine}{" "}
+                                      <strong>
+                                        {currency.format(o.estimate.subsidy)}
+                                      </strong>
+                                    </div>
+                                  ) : null}
+                                  {meta?.brochure ? (
+                                    <a
+                                      className="tier-brochure"
+                                      href={`/brochures/brochure-${meta.brochure}-${lang}.pdf`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      {t.brochure}
+                                    </a>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <div className="tier-none">{t.notOffered}</div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {submit.subsidy ? (
-                        <p className="subsidy">
-                          {t.subsidyLine}{" "}
-                          <strong>{currency.format(submit.subsidy)}</strong> —{" "}
-                          {t.subsidyNote}
-                        </p>
+                      <p className="results-note">{t.subsidyNote}</p>
+                      {submit.emailSent ? (
+                        <p className="results-note">{t.emailedNote}</p>
                       ) : null}
-                      <p>{t.estimateNote}</p>
-                      {submit.emailSent ? <p>{t.emailedNote}</p> : null}
                       {submit.inArea === false ? (
-                        <p className="subsidy">{t.outOfArea}</p>
+                        <p className="results-note warn-note">{t.outOfArea}</p>
                       ) : null}
                       <img
                         className="badge-chip"
                         src={`/products/guarantee-${lang}.png`}
                         alt="10+2"
                       />
-                    </div>
-                  )}
-
-                  {submit.status === "done" && !submit.estimate && (
-                    <div className="pending">
-                      <h3>{t.pendingTitle}</h3>
-                      {submit.subsidy ? (
-                        <p className="subsidy">
-                          {t.subsidyLine}{" "}
-                          <strong>{currency.format(submit.subsidy)}</strong> —{" "}
-                          {t.subsidyNote}
-                        </p>
-                      ) : null}
-                      <p>{t.pendingBody}</p>
-                      {submit.inArea === false ? (
-                        <p className="subsidy">{t.outOfArea}</p>
-                      ) : null}
-                      <a className="cta" href={`tel:${PHONE_TEL}`}>
-                        {t.callUs}
-                      </a>
                     </div>
                   )}
 
@@ -762,7 +658,7 @@ export default function Page() {
                     </div>
                   )}
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
         </section>
@@ -777,15 +673,6 @@ export default function Page() {
         </div>
       </footer>
     </>
-  );
-}
-
-function InfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="info-card">
-      <div className="label">{label}</div>
-      <div className="value">{value}</div>
-    </div>
   );
 }
 

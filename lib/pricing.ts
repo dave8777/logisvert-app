@@ -12,7 +12,7 @@
 // Prix : reference/gree_price_list_2026.csv (liste concessionnaire mars 2026).
 // Subventions : reference/gree_ahri_subsidy.csv (barème LogisVert), par AHRI.
 
-import type { GreeOption } from "./gree-options";
+import { GREE_OPTIONS, type GreeOption } from "./gree-options";
 
 export const RANGE_MARGIN = 500;
 
@@ -271,4 +271,75 @@ export function estimateFor(
 export function subsidyFor(option: GreeOption, quantity: number): number | null {
   const s = SUBSIDIES[option.ahri];
   return s !== undefined ? s * quantity : null;
+}
+
+// ---- soumission multi-options, comme l'application de vente ----
+// Murale : les trois familles côte à côte (ordre : moins chère → premium).
+// Centrale : les deux configurations (ventilo-convecteur / serpentin).
+
+export type SystemType = "murale" | "centrale";
+
+export type QuoteOption = {
+  key: string; // charmo | clivia | airy | handler | coil
+  available: boolean;
+  optionId: string | null;
+  ahri: string | null;
+  estimate: Estimate | null;
+};
+
+export const WALL_SIZES = ["12k", "18k", "24k", "36k"] as const;
+export const CENTRAL_TONS = ["2", "3", "4", "5"] as const;
+
+const WALL_FAMILY_IDS: [string, (size: string) => string][] = [
+  ["charmo", (s) => `charmo-murale-${s.replace("k", "")}`],
+  ["clivia", (s) => `clivia-murale-${s.replace("k", "")}`],
+  ["airy", (s) => `airy-murale-${s.replace("k", "")}`],
+];
+
+const CENTRAL_IDS: Record<string, { handler: string; coil: string }> = {
+  "2": { handler: "flexx-central-24", coil: "flexx-addon-24" },
+  "3": { handler: "flexx-central-36-gdu", coil: "flexx-addon-36" },
+  "4": { handler: "flexx-central-48", coil: "flexx-addon-48" },
+  "5": { handler: "flexx-central-60", coil: "flexx-addon-60" },
+};
+
+function optionById(id: string): GreeOption | undefined {
+  return GREE_OPTIONS.find((o) => o.id === id);
+}
+
+function toQuoteOption(
+  key: string,
+  id: string | undefined,
+  quantity: number
+): QuoteOption {
+  const option = id ? optionById(id) : undefined;
+  if (!option) {
+    return { key, available: false, optionId: null, ahri: null, estimate: null };
+  }
+  return {
+    key,
+    available: true,
+    optionId: option.id,
+    ahri: option.ahri,
+    estimate: estimateFor(option, quantity),
+  };
+}
+
+export function buildQuote(
+  systemType: SystemType,
+  sizeKey: string,
+  quantity: number
+): QuoteOption[] | null {
+  if (systemType === "murale") {
+    if (!(WALL_SIZES as readonly string[]).includes(sizeKey)) return null;
+    return WALL_FAMILY_IDS.map(([key, idFor]) =>
+      toQuoteOption(key, idFor(sizeKey), quantity)
+    );
+  }
+  const ids = CENTRAL_IDS[sizeKey];
+  if (!ids) return null;
+  return [
+    toQuoteOption("handler", ids.handler, quantity),
+    toQuoteOption("coil", ids.coil, quantity),
+  ];
 }
