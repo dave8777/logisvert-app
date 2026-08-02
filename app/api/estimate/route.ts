@@ -7,12 +7,17 @@ import {
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
-// Zone de service DPSD — préfixes postaux (FSA). DÉSACTIVÉE tant que la
-// vraie liste n'est pas confirmée par le propriétaire : la liste héritée de
-// l'app de vente (Vaudreuil-Soulanges + West Island) était un exemple et
-// signalait à tort des clients « hors zone ». Pour réactiver : remplir
-// SERVICE_FSA avec les vrais préfixes et remettre le test dans inServiceArea.
-const SERVICE_FSA = new Set<string>([]);
+// Zone de service DPSD, confirmée par le propriétaire (2026-08-02) :
+// West Island, Saint-Lazare, Les Cèdres (J7T), Hudson et Rigaud (J0P).
+// J0P est un grand FSA rural qui déborde sur d'autres villages voisins —
+// volontairement inclusif : mieux vaut accepter un village limitrophe que
+// refuser Hudson. D'autres secteurs s'ajouteront ici au besoin.
+const SERVICE_FSA = new Set(
+  (
+    "H8Y H8Z H9A H9B H9C H9E H9G H9H H9J H9K H9P H9R H9S H9W H9X " +
+    "J7T J0P"
+  ).split(" ")
+);
 
 function inServiceArea(postal: string): boolean | null {
   const fsa = postal.replace(/\s/g, "").toUpperCase().slice(0, 3);
