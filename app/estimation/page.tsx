@@ -78,7 +78,7 @@ const S = {
     ],
     warranty: "Garantie 10+2 ans sur les pièces et le compresseur · Garantie main-d'œuvre de 1 an",
     foot:
-      "Estimation approximative à titre indicatif seulement, établie à partir des renseignements et photos fournis. Le prix final est confirmé lors d'une visite sur place, sans frais et sans engagement. Les montants incluent les taxes (TPS + TVQ). Subventions LogisVert selon le barème en vigueur — admissibilité confirmée lors de la visite; nous préparons tous les documents pour vous.",
+      "Estimation approximative à titre indicatif seulement, établie à partir des renseignements et photos fournis. Le prix final est confirmé lors d'une visite sur place, sans frais et sans engagement. Les montants incluent les taxes (TPS + TVQ). Subventions LogisVert selon le barème en vigueur — admissibilité confirmée lors de la visite. Après l'installation, vous recevez un dossier de fermeture complet (facture, photos des plaques de série, guide LogisVert) pour soumettre votre demande, et nous enregistrons votre garantie Gree pour vous.",
     contact: "Des questions? Appelez-nous au",
     print: "🖨️ Imprimer / enregistrer en PDF",
     loading: "Chargement de votre estimation…",
@@ -125,7 +125,7 @@ const S = {
     ],
     warranty: "10+2 year warranty on parts and compressor · 1 year labor warranty",
     foot:
-      "Ballpark estimate for guidance only, based on the information and photos provided. The final price is confirmed with a free, no-obligation on-site visit. Amounts include taxes (GST + QST). LogisVert rebates per the current program — eligibility confirmed during the visit; we prepare all the paperwork for you.",
+      "Ballpark estimate for guidance only, based on the information and photos provided. The final price is confirmed with a free, no-obligation on-site visit. Amounts include taxes (GST + QST). LogisVert rebates per the current program — eligibility confirmed during the visit. After installation you receive a complete close-out package (invoice, serial-plate photos, LogisVert guide) to submit your application, and we register your Gree warranty for you.",
     contact: "Questions? Call us at",
     print: "🖨️ Print / save as PDF",
     loading: "Loading your estimate…",
