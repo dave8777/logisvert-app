@@ -31,7 +31,7 @@ type SubmitState =
 const SITE_URL = "https://dpsdair.ca";
 const PHONE_DISPLAY = "(514) 969-8786";
 const PHONE_TEL = "+15149698786";
-const EMAIL = "renovationsdp@gmail.com";
+const EMAIL = "info@dpsdair.ca";
 
 const WALL_SIZES = ["12k", "18k", "24k", "36k"] as const;
 const CENTRAL_TONS = ["2", "3", "4", "5"] as const;
