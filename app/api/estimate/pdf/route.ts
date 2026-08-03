@@ -1,5 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { buildEstimatePdf, type PdfRecord } from "../../../../lib/estimatePdf";
+import {
+  buildEstimatePdf,
+  type PdfRecord,
+  type PdfReviews,
+} from "../../../../lib/estimatePdf";
 
 // Versions JPEG réduites (public/products/pdf) : l'incorporation JPEG dans
 // pdf-lib est quasi gratuite en CPU, alors que les gros PNG dépassent la
@@ -67,12 +71,48 @@ export async function GET(request: Request) {
     }
   }
 
-  const pdf = await buildEstimatePdf(record, {
-    logo: await asset("/products/pdf/logo.jpg"),
-    guarantee: await asset(`/products/pdf/guarantee-${lang}.jpg`),
-    photos,
-    logos,
-  });
+  // Avis Google récents, depuis le cache R2 alimenté par le site. Absent ou
+  // illisible → la section est simplement omise du PDF.
+  let reviews: PdfReviews | null = null;
+  try {
+    const revObj = await env.UPLOADS.get(`cache/google-reviews-v2-${lang}.json`);
+    if (revObj) {
+      const data = JSON.parse(await revObj.text()) as {
+        rating?: number | null;
+        total?: number;
+        reviews?: { author: string; rating: number; when: string; text: string }[];
+      };
+      const picks = (data.reviews ?? [])
+        .filter((r) => (r.text ?? "").trim())
+        .slice(0, 2)
+        .map((r) => {
+          const text = r.text.replace(/\s+/g, " ").trim();
+          return {
+            ...r,
+            text:
+              text.length > 220
+                ? text.slice(0, text.lastIndexOf(" ", 220)) + "…"
+                : text,
+          };
+        });
+      if (picks.length) {
+        reviews = { rating: data.rating ?? null, total: data.total ?? 0, picks };
+      }
+    }
+  } catch {
+    reviews = null;
+  }
+
+  const pdf = await buildEstimatePdf(
+    record,
+    {
+      logo: await asset("/products/pdf/logo.jpg"),
+      guarantee: await asset(`/products/pdf/guarantee-${lang}.jpg`),
+      photos,
+      logos,
+    },
+    reviews
+  );
 
   const filename = `Estimation-DPSD-${record.id.slice(0, 8).toUpperCase()}.pdf`;
   return new Response(pdf as unknown as BodyInit, {
