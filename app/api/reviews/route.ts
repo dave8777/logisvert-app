@@ -37,47 +37,54 @@ export async function GET() {
 
   const fresh = cached && Date.now() - (cached.fetchedAt ?? 0) < MAX_AGE_MS;
 
+  // Raison du dernier échec, exposée quand on n'a rien à servir — permet de
+  // diagnostiquer (clé restreinte par IP, API non activée…) sans les logs.
+  let failReason: string | null = null;
+
+  if (!fresh && !env.GOOGLE_PLACES_API_KEY) {
+    failReason = "GOOGLE_PLACES_API_KEY is not configured";
+  }
   if (!fresh && env.GOOGLE_PLACES_API_KEY) {
     try {
-      const url = new URL(
-        "https://maps.googleapis.com/maps/api/place/details/json"
+      // Places API (New) — la seule activable sur les projets Google récents.
+      const res = await fetch(
+        `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=fr`,
+        {
+          headers: {
+            "X-Goog-Api-Key": env.GOOGLE_PLACES_API_KEY,
+            "X-Goog-FieldMask":
+              "rating,userRatingCount,googleMapsUri,reviews",
+          },
+        }
       );
-      url.searchParams.set("place_id", PLACE_ID);
-      url.searchParams.set("fields", "rating,user_ratings_total,url,reviews");
-      url.searchParams.set("reviews_sort", "newest");
-      url.searchParams.set("key", env.GOOGLE_PLACES_API_KEY);
-      const res = await fetch(url.toString());
       const data = (await res.json()) as {
-        status?: string;
-        result?: {
+        rating?: number;
+        userRatingCount?: number;
+        googleMapsUri?: string;
+        reviews?: {
           rating?: number;
-          user_ratings_total?: number;
-          url?: string;
-          reviews?: {
-            author_name?: string;
-            rating?: number;
-            relative_time_description?: string;
-            text?: string;
-          }[];
-        };
+          relativePublishedTimeDescription?: string;
+          text?: { text?: string };
+          authorAttribution?: { displayName?: string };
+        }[];
+        error?: { status?: string; message?: string };
       };
-      if (data.status === "OK" && data.result) {
-        const r = data.result;
+      if (res.ok && !data.error) {
         cached = {
           fetchedAt: Date.now(),
-          rating: r.rating ?? null,
-          total: r.user_ratings_total ?? 0,
+          rating: data.rating ?? null,
+          total: data.userRatingCount ?? 0,
           url:
-            r.url ??
+            data.googleMapsUri ??
             `https://search.google.com/local/reviews?placeid=${PLACE_ID}`,
-          reviews: (r.reviews ?? [])
-            .filter((x) => (x.rating ?? 0) >= 4 && (x.text ?? "").trim())
+          reviews: (data.reviews ?? [])
+            .filter((x) => (x.rating ?? 0) >= 4 && (x.text?.text ?? "").trim())
             .slice(0, 8)
             .map((x) => ({
-              author: x.author_name ?? "",
+              author: x.authorAttribution?.displayName ?? "",
               rating: x.rating ?? 5,
-              when: x.relative_time_description ?? "",
-              text: String(x.text).slice(0, 320),
+              when: x.relativePublishedTimeDescription ?? "",
+              text: String(x.text?.text ?? "").slice(0, 320),
             })),
         };
         if (env.UPLOADS) {
@@ -85,14 +92,22 @@ export async function GET() {
             httpMetadata: { contentType: "application/json" },
           });
         }
+      } else {
+        failReason = [data.error?.status ?? `HTTP ${res.status}`, data.error?.message]
+          .filter(Boolean)
+          .join(" — ");
       }
-    } catch {
+    } catch (e) {
       // on garde le cache existant
+      failReason = e instanceof Error ? e.message : String(e);
     }
   }
 
   if (!cached) {
-    return Response.json({ ok: false }, { headers: HEADERS });
+    return Response.json(
+      { ok: false, ...(failReason ? { reason: failReason } : {}) },
+      { headers: HEADERS }
+    );
   }
   return Response.json({ ok: true, ...cached }, { headers: HEADERS });
 }
