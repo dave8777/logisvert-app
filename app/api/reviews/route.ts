@@ -4,7 +4,11 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 // Rafraîchi au plus toutes les 12 h → une poignée d'appels Places par jour,
 // largement dans le palier gratuit. Échec de fetch = on garde l'ancien cache.
 const PLACE_ID = "ChIJYdywAFE5yUwRovisYp3U-gc";
-const CACHE_KEY = "cache/google-reviews-v2.json";
+// Un cache par langue : la page FR reçoit les avis en français, la page EN en anglais.
+const CACHE_KEYS = {
+  fr: "cache/google-reviews-v2-fr.json",
+  en: "cache/google-reviews-v2-en.json",
+};
 const MAX_AGE_MS = 12 * 3600 * 1000;
 
 const HEADERS = {
@@ -18,19 +22,25 @@ const FAIL_HEADERS = {
   "cache-control": "no-store",
 };
 
-const MONTHS_FR = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-];
+const MONTHS = {
+  fr: [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+  ],
+  en: [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ],
+};
 
 // L'API v1 laisse souvent relativePublishedTimeDescription vide ;
 // on retombe sur « mois année » à partir de publishTime.
-function whenLabel(relative?: string, publishTime?: string): string {
+function whenLabel(lang: "fr" | "en", relative?: string, publishTime?: string): string {
   if (relative && relative.trim()) return relative;
   if (publishTime) {
     const d = new Date(publishTime);
     if (!Number.isNaN(d.getTime())) {
-      return `${MONTHS_FR[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      return `${MONTHS[lang][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
     }
   }
   return "";
@@ -52,12 +62,15 @@ type CachedReviews = {
   reviews: { author: string; rating: number; when: string; text: string }[];
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   const { env } = getCloudflareContext();
+  const lang =
+    new URL(request.url).searchParams.get("lang") === "en" ? "en" : "fr";
+  const cacheKey = CACHE_KEYS[lang];
 
   let cached: CachedReviews | null = null;
   if (env.UPLOADS) {
-    const obj = await env.UPLOADS.get(CACHE_KEY);
+    const obj = await env.UPLOADS.get(cacheKey);
     if (obj) {
       try {
         cached = JSON.parse(await obj.text()) as CachedReviews;
@@ -80,7 +93,7 @@ export async function GET() {
     try {
       // Places API (New) — la seule activable sur les projets Google récents.
       const res = await fetch(
-        `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=fr`,
+        `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=${lang}`,
         {
           headers: {
             "X-Goog-Api-Key": env.GOOGLE_PLACES_API_KEY,
@@ -116,12 +129,12 @@ export async function GET() {
             .map((x) => ({
               author: x.authorAttribution?.displayName ?? "",
               rating: x.rating ?? 5,
-              when: whenLabel(x.relativePublishedTimeDescription, x.publishTime),
+              when: whenLabel(lang, x.relativePublishedTimeDescription, x.publishTime),
               text: clip(String(x.text?.text ?? ""), 320),
             })),
         };
         if (env.UPLOADS) {
-          await env.UPLOADS.put(CACHE_KEY, JSON.stringify(cached), {
+          await env.UPLOADS.put(cacheKey, JSON.stringify(cached), {
             httpMetadata: { contentType: "application/json" },
           });
         }
