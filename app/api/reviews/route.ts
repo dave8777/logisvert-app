@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 // Rafraîchi au plus toutes les 12 h → une poignée d'appels Places par jour,
 // largement dans le palier gratuit. Échec de fetch = on garde l'ancien cache.
 const PLACE_ID = "ChIJYdywAFE5yUwRovisYp3U-gc";
-const CACHE_KEY = "cache/google-reviews.json";
+const CACHE_KEY = "cache/google-reviews-v2.json";
 const MAX_AGE_MS = 12 * 3600 * 1000;
 
 const HEADERS = {
@@ -17,6 +17,32 @@ const FAIL_HEADERS = {
   "access-control-allow-origin": "*",
   "cache-control": "no-store",
 };
+
+const MONTHS_FR = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+
+// L'API v1 laisse souvent relativePublishedTimeDescription vide ;
+// on retombe sur « mois année » à partir de publishTime.
+function whenLabel(relative?: string, publishTime?: string): string {
+  if (relative && relative.trim()) return relative;
+  if (publishTime) {
+    const d = new Date(publishTime);
+    if (!Number.isNaN(d.getTime())) {
+      return `${MONTHS_FR[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    }
+  }
+  return "";
+}
+
+// Coupe au dernier mot complet plutôt qu'en pleine phrase.
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut) + "…";
+}
 
 type CachedReviews = {
   fetchedAt: number;
@@ -70,6 +96,7 @@ export async function GET() {
         reviews?: {
           rating?: number;
           relativePublishedTimeDescription?: string;
+          publishTime?: string;
           text?: { text?: string };
           authorAttribution?: { displayName?: string };
         }[];
@@ -89,8 +116,8 @@ export async function GET() {
             .map((x) => ({
               author: x.authorAttribution?.displayName ?? "",
               rating: x.rating ?? 5,
-              when: x.relativePublishedTimeDescription ?? "",
-              text: String(x.text?.text ?? "").slice(0, 320),
+              when: whenLabel(x.relativePublishedTimeDescription, x.publishTime),
+              text: clip(String(x.text?.text ?? ""), 320),
             })),
         };
         if (env.UPLOADS) {
