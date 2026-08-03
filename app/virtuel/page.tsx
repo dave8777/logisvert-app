@@ -417,7 +417,6 @@ export default function VirtualPage() {
                       resetSubmit();
                     }}
                   >
-                    <img src="/products/clivia.png" alt={t.typeWall} />
                     <strong>{t.typeWall}</strong>
                     <span>{t.typeWallDesc}</span>
                   </button>
@@ -429,7 +428,6 @@ export default function VirtualPage() {
                       resetSubmit();
                     }}
                   >
-                    <img src="/products/central-old.svg" alt={t.typeCentral} />
                     <strong>{t.typeCentral}</strong>
                     <span>{t.typeCentralDesc}</span>
                   </button>
