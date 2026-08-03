@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 175" role="img" aria-label="">
+  <defs>
+    <linearGradient id="beige" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e4ddcd"/>
+      <stop offset="0.55" stop-color="#d6cfbd"/>
+      <stop offset="1" stop-color="#c2bba8"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ccd1d6"/>
+      <stop offset="0.5" stop-color="#b9bfc5"/>
+      <stop offset="1" stop-color="#9aa1a8"/>
+    </linearGradient>
+    <linearGradient id="duct" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d9dde1"/>
+      <stop offset="0.5" stop-color="#c4c9ce"/>
+      <stop offset="1" stop-color="#a8aeb5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- floor line -->
+  <line x1="14" y1="160" x2="426" y2="160" stroke="#c9c4b8" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- ===== old outdoor heat pump (condenser) ===== -->
+  <g>
+    <!-- concrete pad -->
+    <rect x="28" y="152" width="150" height="8" rx="2" fill="#b5b0a4"/>
+    <!-- cabinet -->
+    <rect x="38" y="52" width="130" height="100" rx="6" fill="url(#beige)" stroke="#8f887a" stroke-width="2"/>
+    <!-- corner trim -->
+    <rect x="38" y="52" width="10" height="100" rx="4" fill="#c8c1af"/>
+    <rect x="158" y="52" width="10" height="100" rx="4" fill="#aaa38f"/>
+    <!-- top with fan guard -->
+    <rect x="38" y="44" width="130" height="16" rx="6" fill="#9d9683" stroke="#8f887a" stroke-width="2"/>
+    <ellipse cx="103" cy="52" rx="44" ry="9" fill="#6d675a"/>
+    <ellipse cx="103" cy="52" rx="44" ry="9" fill="none" stroke="#57524a" stroke-width="1.5"/>
+    <ellipse cx="103" cy="52" rx="30" ry="6" fill="none" stroke="#57524a" stroke-width="1.2"/>
+    <ellipse cx="103" cy="52" rx="16" ry="3.2" fill="none" stroke="#57524a" stroke-width="1.2"/>
+    <circle cx="103" cy="52" r="3.4" fill="#403c36"/>
+    <!-- louvers -->
+    <g stroke="#8f887a" stroke-width="1.6">
+      <line x1="52" y1="72" x2="154" y2="72"/>
+      <line x1="52" y1="81" x2="154" y2="81"/>
+      <line x1="52" y1="90" x2="154" y2="90"/>
+      <line x1="52" y1="99" x2="154" y2="99"/>
+      <line x1="52" y1="108" x2="154" y2="108"/>
+      <line x1="52" y1="117" x2="154" y2="117"/>
+      <line x1="52" y1="126" x2="154" y2="126"/>
+      <line x1="52" y1="135" x2="154" y2="135"/>
+    </g>
+    <!-- faded badge -->
+    <rect x="88" y="140" width="30" height="7" rx="2" fill="#b3ac99"/>
+    <!-- rust at the base -->
+    <path d="M40 150 q6 -7 12 0 q5 -5 10 0 z" fill="#a86a3f" opacity="0.55"/>
+    <path d="M140 150 q6 -8 13 0 q6 -5 11 0 z" fill="#a86a3f" opacity="0.45"/>
+    <path d="M162 96 q4 10 1 22 l-3 0 q2 -12 -1 -22 z" fill="#a86a3f" opacity="0.35"/>
+    <!-- refrigerant lines to the wall -->
+    <path d="M168 128 h20 q8 0 8 8 v16" fill="none" stroke="#7d7668" stroke-width="4" stroke-linecap="round"/>
+    <path d="M168 138 h14 q6 0 6 6 v8" fill="none" stroke="#544f45" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- ===== old indoor air handler / furnace with ducts ===== -->
+  <g>
+    <!-- return duct (side, angled joint) -->
+    <rect x="262" y="70" width="27" height="90" fill="url(#duct)" stroke="#868d94" stroke-width="1.8"/>
+    <line x1="262" y1="96" x2="289" y2="96" stroke="#868d94" stroke-width="1.4"/>
+    <line x1="262" y1="124" x2="289" y2="124" stroke="#868d94" stroke-width="1.4"/>
+    <!-- supply plenum going up -->
+    <rect x="298" y="6" width="54" height="46" fill="url(#duct)" stroke="#868d94" stroke-width="1.8"/>
+    <line x1="298" y1="22" x2="352" y2="22" stroke="#868d94" stroke-width="1.4"/>
+    <line x1="298" y1="38" x2="352" y2="38" stroke="#868d94" stroke-width="1.4"/>
+    <!-- cabinet -->
+    <rect x="288" y="50" width="74" height="110" rx="4" fill="url(#steel)" stroke="#767d84" stroke-width="2"/>
+    <!-- panel seams + latches -->
+    <line x1="288" y1="88" x2="362" y2="88" stroke="#8b9298" stroke-width="1.8"/>
+    <line x1="288" y1="126" x2="362" y2="126" stroke="#8b9298" stroke-width="1.8"/>
+    <circle cx="352" cy="97" r="2.6" fill="#767d84"/>
+    <circle cx="352" cy="117" r="2.6" fill="#767d84"/>
+    <!-- old brand plate + spec label -->
+    <rect x="300" y="62" width="34" height="10" rx="2" fill="#7d848b"/>
+    <rect x="300" y="98" width="22" height="16" rx="2" fill="#e8e4d8" stroke="#9aa1a8" stroke-width="1"/>
+    <line x1="303" y1="103" x2="319" y2="103" stroke="#9aa1a8" stroke-width="1.2"/>
+    <line x1="303" y1="108" x2="315" y2="108" stroke="#9aa1a8" stroke-width="1.2"/>
+    <!-- louvered lower door -->
+    <g stroke="#8b9298" stroke-width="1.5">
+      <line x1="298" y1="136" x2="352" y2="136"/>
+      <line x1="298" y1="142" x2="352" y2="142"/>
+      <line x1="298" y1="148" x2="352" y2="148"/>
+    </g>
+    <!-- gas/electric conduit -->
+    <path d="M362 132 h16 q6 0 6 6 v22" fill="none" stroke="#7d848b" stroke-width="3" stroke-linecap="round"/>
+    <!-- flexible duct hint to the right -->
+    <path d="M352 14 h24 q14 0 20 12" fill="none" stroke="#a8aeb5" stroke-width="10" stroke-linecap="round"/>
+    <path d="M352 14 h24 q14 0 20 12" fill="none" stroke="#c4c9ce" stroke-width="6" stroke-linecap="round" stroke-dasharray="3 5"/>
+  </g>
+</svg>

@@ -429,7 +429,7 @@ export default function VirtualPage() {
                       resetSubmit();
                     }}
                   >
-                    <img src="/products/airhandler.png" alt={t.typeCentral} />
+                    <img src="/products/central-old.svg" alt={t.typeCentral} />
                     <strong>{t.typeCentral}</strong>
                     <span>{t.typeCentralDesc}</span>
                   </button>
