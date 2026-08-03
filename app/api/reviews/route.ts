@@ -12,6 +12,12 @@ const HEADERS = {
   "cache-control": "public, max-age=3600",
 };
 
+// Les échecs ne doivent jamais rester coincés dans un cache navigateur/edge.
+const FAIL_HEADERS = {
+  "access-control-allow-origin": "*",
+  "cache-control": "no-store",
+};
+
 type CachedReviews = {
   fetchedAt: number;
   rating: number | null;
@@ -106,7 +112,7 @@ export async function GET() {
   if (!cached) {
     return Response.json(
       { ok: false, ...(failReason ? { reason: failReason } : {}) },
-      { headers: HEADERS }
+      { headers: FAIL_HEADERS }
     );
   }
   return Response.json({ ok: true, ...cached }, { headers: HEADERS });
