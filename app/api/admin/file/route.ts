@@ -10,7 +10,10 @@ export async function GET(request: Request) {
   if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) {
     return new Response("Accès refusé.", { status: 403 });
   }
-  if (!path.startsWith("submissions/") || path.includes("..")) {
+  if (
+    !(path.startsWith("submissions/") || path.startsWith("virtual/")) ||
+    path.includes("..")
+  ) {
     return new Response("Chemin invalide.", { status: 400 });
   }
   if (!env.UPLOADS) {
