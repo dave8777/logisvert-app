@@ -417,6 +417,10 @@ export default function VirtualPage() {
                       resetSubmit();
                     }}
                   >
+                    <div className="pick-photos">
+                      <img src="/products/old-wall-indoor.jpg" alt="" />
+                      <img src="/products/old-wall-outdoor.jpg" alt="" />
+                    </div>
                     <strong>{t.typeWall}</strong>
                     <span>{t.typeWallDesc}</span>
                   </button>

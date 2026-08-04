@@ -606,6 +606,19 @@ a:hover { text-decoration: underline; }
   object-fit: contain;
   margin-bottom: 0.6rem;
 }
+.pick-card .pick-photos {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 0.6rem;
+}
+.pick-card .pick-photos img {
+  width: 50%;
+  min-width: 0;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0;
+}
 .pick-card strong { display: block; color: var(--navy); font-size: 1rem; }
 .pick-card span {
   display: block;
