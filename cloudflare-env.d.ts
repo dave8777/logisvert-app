@@ -32,6 +32,8 @@ interface CloudflareEnv {
   };
   ADMIN_KEY?: string;
   RESEND_API_KEY?: string;
+  SALES_SYNC_URL?: string;
+  SALES_LEAD_KEY?: string;
   GOOGLE_PLACES_API_KEY?: string;
   AI?: {
     run(model: string, inputs: Record<string, unknown>): Promise<unknown>;

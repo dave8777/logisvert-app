@@ -264,6 +264,21 @@ ${notes ? `<p>Client notes: ${notes}</p>` : ""}
     httpMetadata: { contentType: "application/json" },
   });
 
+  // Ping the sales app so it imports this booking (photos, OCR, meeting
+  // slot) right away. Best-effort: a sales-app outage never blocks a client.
+  const salesUrl = (env.SALES_SYNC_URL ?? "").trim().replace(/\/+$/, "");
+  if (salesUrl && env.SALES_LEAD_KEY) {
+    try {
+      await fetch(`${salesUrl}/api/leads/sync-cloud`, {
+        method: "POST",
+        headers: { "x-lead-key": env.SALES_LEAD_KEY },
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch {
+      // ignored — the booking is stored; the office can still import manually
+    }
+  }
+
   return Response.json({
     ok: true,
     id,

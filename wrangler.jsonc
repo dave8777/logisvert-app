@@ -14,6 +14,11 @@
       "bucket_name": "dpsd-estimates"
     }
   ],
+  "vars": {
+    // Sales app to notify after each virtual-estimate booking; the shared
+    // key is a secret: npx wrangler secret put SALES_LEAD_KEY
+    "SALES_SYNC_URL": "https://sales.dpsdair.ca"
+  },
   "ai": {
     "binding": "AI"
   }
