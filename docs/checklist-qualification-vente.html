@@ -1,0 +1,1300 @@
+<title>Grille de qualification DPSD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground: #eef2f4;
+    --surface: #ffffff;
+    --surface-2: #f6f9fa;
+    --ink: #111a1f;
+    --ink-2: #4d6069;
+    --ink-3: #7a8d96;
+    --line: #d5dfe3;
+    --line-soft: #e5ecef;
+    --accent: #0b6e80;
+    --accent-ink: #08505e;
+    --accent-soft: #e0eef1;
+    --flag: #a93a2c;
+    --flag-soft: #f7e6e3;
+    --warn: #96660f;
+    --warn-soft: #f8eeda;
+    --ok: #2a6c50;
+    --ok-soft: #e0efe7;
+    --shadow: 0 1px 2px rgba(17, 26, 31, .06), 0 8px 24px -18px rgba(17, 26, 31, .5);
+    --radius: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c1216;
+      --surface: #141d22;
+      --surface-2: #18232a;
+      --ink: #e9eff1;
+      --ink-2: #9db0b8;
+      --ink-3: #74888f;
+      --line: #26343b;
+      --line-soft: #1e2b32;
+      --accent: #52c2d6;
+      --accent-ink: #8ad8e7;
+      --accent-soft: #14323b;
+      --flag: #e8887a;
+      --flag-soft: #33201d;
+      --warn: #d7a544;
+      --warn-soft: #322817;
+      --ok: #63bf93;
+      --ok-soft: #172f25;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 26px -20px rgba(0, 0, 0, .9);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0c1216;
+    --surface: #141d22;
+    --surface-2: #18232a;
+    --ink: #e9eff1;
+    --ink-2: #9db0b8;
+    --ink-3: #74888f;
+    --line: #26343b;
+    --line-soft: #1e2b32;
+    --accent: #52c2d6;
+    --accent-ink: #8ad8e7;
+    --accent-soft: #14323b;
+    --flag: #e8887a;
+    --flag-soft: #33201d;
+    --warn: #d7a544;
+    --warn-soft: #322817;
+    --ok: #63bf93;
+    --ok-soft: #172f25;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 26px -20px rgba(0, 0, 0, .9);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -.015em;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: .85em;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .masthead-in {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 26px 20px 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .masthead h1 {
+    font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.3rem);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .masthead p {
+    margin: 8px 0 0;
+    color: var(--ink-2);
+    max-width: 60ch;
+    font-size: .95rem;
+  }
+
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  button {
+    font: inherit;
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 7px 13px;
+    cursor: pointer;
+  }
+
+  button:hover { border-color: var(--accent); color: var(--accent-ink); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- status strip ---------- */
+
+  .status {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+
+  .status-in {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: flex;
+    gap: 14px 22px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: Archivo, sans-serif;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid;
+  }
+
+  .verdict::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .verdict[data-state="open"] { color: var(--ink-2); border-color: var(--line); background: var(--surface-2); }
+  .verdict[data-state="blocked"] { color: var(--flag); border-color: var(--flag); background: var(--flag-soft); }
+  .verdict[data-state="partial"] { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+  .verdict[data-state="ready"] { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+
+  .meters { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; }
+
+  .meter { min-width: 140px; }
+
+  .meter-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 5px;
+  }
+
+  .meter-top b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .bar { height: 5px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .18s ease; }
+  .bar.flagbar > i { background: var(--flag); }
+  .bar.flagbar.full > i { background: var(--ok); }
+
+  .route-chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 5px 10px;
+  }
+
+  .route-chip[hidden] { display: none; }
+
+  /* ---------- page ---------- */
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 26px 20px 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .sec-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .sec-num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+
+  .sec-head h2 { font-size: 1.18rem; font-weight: 700; }
+
+  .sec-head .sec-sub {
+    flex-basis: 100%;
+    margin: 2px 0 0;
+    color: var(--ink-2);
+    font-size: .9rem;
+    max-width: 68ch;
+  }
+
+  .items { display: flex; flex-direction: column; }
+
+  .item {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 12px;
+    padding: 13px 22px 13px 22px;
+    border-bottom: 1px solid var(--line-soft);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .item:last-child { border-bottom: 0; }
+  .item:hover { background: var(--surface-2); }
+
+  .item[data-blocker]::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--flag);
+  }
+
+  .item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    margin: 2px 0 0;
+    border: 1.5px solid var(--ink-3);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+  }
+
+  .item input[type="checkbox"]::after {
+    content: "";
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid var(--surface);
+    border-bottom: 2px solid var(--surface);
+    transform: rotate(-45deg) translate(1px, -1px);
+    opacity: 0;
+  }
+
+  .item input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .item input[type="checkbox"]:checked::after { opacity: 1; }
+  .item input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .item .q { font-weight: 500; display: block; }
+  .item input:checked ~ .body .q { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--ink-3); }
+
+  .item .hint {
+    display: block;
+    margin-top: 3px;
+    color: var(--ink-2);
+    font-size: .88rem;
+    max-width: 72ch;
+  }
+
+  .item .say {
+    display: block;
+    margin-top: 6px;
+    padding-left: 10px;
+    border-left: 2px solid var(--accent-soft);
+    color: var(--accent-ink);
+    font-size: .88rem;
+    font-style: italic;
+  }
+
+  /* ---------- routes ---------- */
+
+  .routes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .route {
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    line-height: 1.4;
+  }
+
+  .route .r-key {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .route .r-name { font-family: Archivo, sans-serif; font-weight: 700; font-size: 1rem; }
+  .route .r-when { font-size: .84rem; color: var(--ink-2); }
+
+  .route[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .route[aria-pressed="true"] .r-key,
+  .route[aria-pressed="true"] .r-when { color: var(--accent-ink); }
+
+  .route-block { display: none; }
+  .route-block.on { display: block; }
+
+  .route-block > .rb-head {
+    padding: 14px 22px 0;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .route-block h3 { font-size: 1rem; font-weight: 700; }
+
+  .route-empty {
+    padding: 16px 22px 20px;
+    color: var(--ink-2);
+    font-size: .9rem;
+  }
+
+  /* ---------- flags ---------- */
+
+  .flags { padding: 6px 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  .flag {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 11px;
+    align-items: start;
+    padding: 11px 13px;
+    background: var(--flag-soft);
+    border: 1px solid var(--flag);
+    border-radius: 8px;
+    font-size: .9rem;
+  }
+
+  .flag b { font-weight: 600; }
+  .flag .fx { color: var(--flag); font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+  .flag span:last-child { color: var(--ink); }
+  .flag .then { display: block; margin-top: 2px; color: var(--ink-2); }
+
+  /* ---------- tables ---------- */
+
+  .table-wrap { overflow-x: auto; padding: 0 22px 20px; }
+
+  table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: .9rem; }
+
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+  }
+
+  tbody th { font-weight: 600; white-space: nowrap; }
+
+  td.y { color: var(--ok); font-weight: 600; }
+  td.n { color: var(--ink-3); }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  .table-note { padding: 0 22px 18px; margin: -6px 0 0; color: var(--ink-2); font-size: .85rem; max-width: 72ch; }
+
+  .fsa {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 22px 14px;
+  }
+
+  .fsa code {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-weight: 500;
+  }
+
+  /* ---------- notes ---------- */
+
+  .notes { padding: 14px 22px 18px; border-top: 1px solid var(--line-soft); background: var(--surface-2); }
+
+  .notes label {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+
+  .notes textarea {
+    width: 100%;
+    min-height: 62px;
+    resize: vertical;
+    font: inherit;
+    font-size: .92rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 9px 11px;
+  }
+
+  .notes textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+
+  footer {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 20px 50px;
+    color: var(--ink-2);
+    font-size: .85rem;
+  }
+
+  footer .co { font-family: "IBM Plex Mono", monospace; font-size: .8rem; color: var(--ink-3); }
+
+  a { color: var(--accent-ink); }
+
+  @media (max-width: 560px) {
+    .item, .sec-head, .routes, .flags, .notes, .table-wrap, .table-note, .fsa { padding-left: 15px; padding-right: 15px; }
+    .status-in { gap: 10px 16px; }
+  }
+
+  @media print {
+    :root { --ground: #fff; --surface: #fff; --surface-2: #fff; --ink: #000; --ink-2: #333; --ink-3: #555; --line: #bbb; --line-soft: #ddd; --accent: #000; --accent-ink: #000; --accent-soft: #fff; --shadow: none; }
+    .tools, .notes textarea { display: none; }
+    .status { position: static; box-shadow: none; }
+    section { break-inside: avoid; border-color: #bbb; }
+    .route-block { display: block !important; }
+    body { font-size: 11pt; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <div>
+      <p class="eyebrow" data-en="Groupe DPSD · Sales team · Gree heat pumps">Groupe DPSD · Équipe des ventes · Thermopompes Gree</p>
+      <h1 data-en="Lead qualification checklist">Grille de qualification d'un appel</h1>
+      <p data-en="Run it in order: filter, route the project to the right service line, fill the file, set the next step. What is not confirmed here comes back as a lost trip.">Suivez-la dans l'ordre : filtrer, router le projet vers la bonne offre, remplir le dossier, fixer la prochaine étape. Ce qui n'est pas confirmé ici revient en déplacement perdu.</p>
+    </div>
+    <div class="tools">
+      <button id="lang" type="button">English</button>
+      <button id="print" type="button" data-en="Print">Imprimer</button>
+      <button id="reset" type="button" data-en="New call">Nouvel appel</button>
+    </div>
+  </div>
+</header>
+
+<div class="status">
+  <div class="status-in">
+    <span class="verdict" id="verdict" data-state="open" data-en="Call in progress">Appel en cours</span>
+    <div class="meters">
+      <div class="meter">
+        <div class="meter-top"><span data-en="Blockers">Bloquants</span><b id="blockCount">0/4</b></div>
+        <div class="bar flagbar" id="blockBar"><i></i></div>
+      </div>
+      <div class="meter">
+        <div class="meter-top"><span data-en="File">Dossier</span><b id="allCount">0 %</b></div>
+        <div class="bar"><i id="allBar"></i></div>
+      </div>
+    </div>
+    <span class="route-chip" id="routeChip" hidden></span>
+  </div>
+</div>
+
+<main>
+
+  <!-- 1 — FILTRE -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2 data-en="The gate — four blockers">Le filtre — quatre bloquants</h2>
+      <p class="sec-sub" data-en="Sixty seconds, before anything else. If one of these four is not a clear yes, do not book a visit and do not promise a price.">Soixante secondes, avant tout le reste. Si un des quatre n'est pas un oui clair, on ne réserve pas de visite et on ne promet pas de prix.</p>
+    </div>
+    <div class="items">
+      <label class="item" data-blocker>
+        <input type="checkbox" data-id="b1">
+        <span class="body">
+          <span class="q" data-en="The postal code is inside our service area">Le code postal est dans notre zone de service</span>
+          <span class="hint" data-en="Ask for it before anything else — the area decides the rest of the call. Outside the zone: take the request down, promise nothing, check with the office.">Demandez-le avant tout le reste — le secteur décide de la suite de l'appel. Hors zone : notez la demande, ne promettez rien, validez avec le bureau.</span>
+          <span class="say" data-en="&ldquo;What's the postal code where the unit goes?&rdquo;">« Quel est le code postal de l'adresse où l'appareil serait installé? »</span>
+        </span>
+      </label>
+      <label class="item" data-blocker>
+        <input type="checkbox" data-id="b2">
+        <span class="body">
+          <span class="q" data-en="I'm speaking to the owner or the decision-maker">Je parle au propriétaire ou au décideur</span>
+          <span class="hint" data-en="A tenant, a brother-in-law or a manager without a mandate cannot sign. In a condo, the outdoor unit usually needs the syndicate's approval — sort that out before the visit, not after.">Un locataire, un beau-frère ou un gestionnaire sans mandat ne peut pas signer. En copropriété, l'unité extérieure demande généralement l'accord du syndicat — réglez ça avant la visite, pas après.</span>
+        </span>
+      </label>
+      <label class="item" data-blocker>
+        <input type="checkbox" data-id="b3">
+        <span class="body">
+          <span class="q" data-en="It's a residential building we serve">C'est un bâtiment résidentiel qu'on dessert</span>
+          <span class="hint" data-en="Single-family, semi-detached, plex, condo. Commercial, industrial, a whole apartment building or a builder's lot: pass it to the office before quoting anything.">Unifamiliale, jumelé, plex, condo. Commercial, industriel, immeuble à logements complet ou lot de construction neuve : transférez au bureau avant de chiffrer quoi que ce soit.</span>
+        </span>
+      </label>
+      <label class="item" data-blocker>
+        <input type="checkbox" data-id="b4">
+        <span class="body">
+          <span class="q" data-en="The project is real and has a date">Le projet est réel et il a une date</span>
+          <span class="hint" data-en="Dead unit, aging system, adding cooling, new install. Someone shopping a number for two years from now is not this week's visit — send the online estimate and follow up later.">Appareil mort, système en fin de vie, ajout de climatisation, nouvelle installation. Quelqu'un qui magasine un chiffre pour dans deux ans n'est pas la visite de cette semaine — envoyez l'estimation en ligne et relancez plus tard.</span>
+          <span class="say" data-en="&ldquo;Ideally, when would you want this installed?&rdquo;">« Idéalement, ce serait installé quand? »</span>
+        </span>
+      </label>
+    </div>
+    <div class="notes">
+      <label for="n1" data-en="Notes">Notes</label>
+      <textarea id="n1" data-id="n1" data-ph-en="Name, phone, email, city, postal code…" placeholder="Nom, téléphone, courriel, ville, code postal…"></textarea>
+    </div>
+  </section>
+
+  <!-- 2 — ROUTAGE -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2 data-en="Route the project">Router le projet</h2>
+      <p class="sec-sub" data-en="Two questions decide everything: are there working ducts, and how many zones? Pick the route — the follow-up questions for that route open below.">Deux questions décident de tout : y a-t-il des conduits fonctionnels, et combien de zones? Choisissez la route — les questions propres à cette route s'ouvrent en dessous.</p>
+    </div>
+    <div class="routes" id="routes">
+      <button class="route" type="button" data-route="murale" aria-pressed="false">
+        <span class="r-key">A · <span data-en="No ducts · 1 zone">Sans conduits · 1 zone</span></span>
+        <span class="r-name" data-en="Wall-mounted, single zone">Murale mono-zone</span>
+        <span class="r-when">Charmo 12–36k · Clivia 12–24k · Airy 12–18k</span>
+      </button>
+      <button class="route" type="button" data-route="multizone" aria-pressed="false">
+        <span class="r-key">B · <span data-en="No ducts · 2 zones +">Sans conduits · 2 zones et +</span></span>
+        <span class="r-name">Multizone</span>
+        <span class="r-when" data-en="18 to 42k outdoor · custom quote, no online price">18 à 42k extérieur · sur mesure, aucun prix en ligne</span>
+      </button>
+      <button class="route" type="button" data-route="central" aria-pressed="false">
+        <span class="r-key">C · <span data-en="Ducts · no furnace to keep">Conduits · pas de fournaise à garder</span></span>
+        <span class="r-name" data-en="Central — complete system">Centrale — système complet</span>
+        <span class="r-when" data-en="Flexx air handler 2 to 5 tons + electric backup">Ventilo-convecteur Flexx 2 à 5 tonnes + appoint électrique</span>
+      </button>
+      <button class="route" type="button" data-route="addon" aria-pressed="false">
+        <span class="r-key">D · <span data-en="Ducts · furnace stays">Conduits · fournaise conservée</span></span>
+        <span class="r-name" data-en="Central — coil on the furnace">Centrale — serpentin sur fournaise</span>
+        <span class="r-when" data-en="Flexx Add-On 2 to 5 tons · furnace stays as backup">Flexx Add-On 2 à 5 tonnes · la fournaise reste en appoint</span>
+      </button>
+    </div>
+
+    <div class="items">
+      <label class="item">
+        <input type="checkbox" data-id="r1">
+        <span class="body">
+          <span class="q" data-en="Ducts: does the house have working ductwork?">Conduits : la maison a-t-elle des conduits d'air fonctionnels?</span>
+          <span class="hint" data-en="Furnace or existing central air, floor or ceiling registers in every room. Ducts in the basement only, or a house heated with baseboards, means no ducts for our purposes.">Fournaise ou climatisation centrale existante, grilles au plancher ou au plafond dans les pièces. Des conduits au sous-sol seulement, ou une maison chauffée aux plinthes, ça veut dire pas de conduits pour nous.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="r2">
+        <span class="body">
+          <span class="q" data-en="Heating source: what heats the house today, and does it stay?">Chauffage : qu'est-ce qui chauffe aujourd'hui, et est-ce qu'on le garde?</span>
+          <span class="hint" data-en="A furnace in good shape that the client keeps points to the cased coil (route D). A dead furnace, or none at all, points to the complete system with electric backup (route C).">Une fournaise en bon état que le client garde mène au serpentin (route D). Une fournaise morte, ou pas de fournaise du tout, mène au système complet avec appoint électrique (route C).</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="r3">
+        <span class="body">
+          <span class="q" data-en="Zones: which rooms or floors do we have to treat?">Zones : quelles pièces ou quels étages faut-il traiter?</span>
+          <span class="hint" data-en="One room on one outdoor unit is a single zone (route A). Two rooms or more on a single outdoor unit is multizone (route B) — several separate single-zone systems is also a valid answer, and often the cheaper one.">Une pièce sur une unité extérieure, c'est mono-zone (route A). Deux pièces et plus sur une seule unité extérieure, c'est multizone (route B) — plusieurs mono-zones séparés est aussi une réponse valable, souvent moins chère.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="r4">
+        <span class="body">
+          <span class="q" data-en="Replacement or new installation is confirmed">Remplacement ou nouvelle installation, c'est confirmé</span>
+          <span class="hint" data-en="A replacement includes removal and disposal of the old equipment, and the nameplate gives us the starting capacity. A new install needs photos of the planned locations instead.">Un remplacement inclut l'enlèvement et la disposition des vieux équipements, et la plaque signalétique nous donne la capacité de départ. Une nouvelle installation demande plutôt des photos des emplacements prévus.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="r5">
+        <span class="body">
+          <span class="q" data-en="A starting capacity is written down">Une capacité de départ est notée</span>
+          <span class="hint" data-en="Replacement: read it off the nameplate — the model number carries it (GWH12 = 12,000 BTU, 036 = 3 tons). New install: square footage, number of floors, ceiling height, insulation, comfort complaints. Final sizing is confirmed on site — never commit to a tonnage over the phone.">Remplacement : lisez-la sur la plaque — le numéro de modèle la contient (GWH12 = 12 000 BTU, 036 = 3 tonnes). Nouvelle installation : superficie, nombre d'étages, hauteur des plafonds, isolation, plaintes de confort. La capacité finale se confirme sur place — ne vous engagez jamais sur un tonnage au téléphone.</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="route-empty" id="routeEmpty" data-en="Pick a route above to open its specific questions.">Choisissez une route ci-dessus pour ouvrir ses questions propres.</div>
+
+    <div class="route-block" data-block="murale">
+      <div class="rb-head"><span class="sec-num">A</span><h3 data-en="Wall-mounted, single zone">Murale mono-zone</h3></div>
+      <div class="items">
+        <label class="item">
+          <input type="checkbox" data-id="a1">
+          <span class="body">
+            <span class="q" data-en="Capacity available in the family the client wants">La capacité existe dans la famille que le client veut</span>
+            <span class="hint" data-en="Charmo goes 12k to 36k and heats to −25 °C. Clivia goes 12k to 24k, −30 °C. Airy is 12k and 18k, −30 °C and the most efficient. 36k exists in Charmo only — see the reference grid.">Charmo va de 12k à 36k et chauffe jusqu'à −25 °C. Clivia va de 12k à 24k, −30 °C. Airy est en 12k et 18k, −30 °C et la plus efficace. Le 36k n'existe qu'en Charmo — voyez la grille de référence.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="a2">
+          <span class="body">
+            <span class="q" data-en="Indoor style chosen: wall, cassette, console or ducted">Style intérieur choisi : murale, cassette, console ou gainable</span>
+            <span class="hint" data-en="Wall-mounted is the default and the cheapest. Cassette goes in a ceiling (needs an attic or a dropped ceiling), console sits low on the wall, ducted hides in a soffit or a closet. These styles exist in a few sizes only — check the grid before naming one.">La murale est le choix par défaut et le moins cher. La cassette va au plafond (il faut un grenier ou un plafond suspendu), la console se pose en bas du mur, la gainable se cache dans un soffite ou un garde-robe. Ces styles n'existent que dans certaines capacités — vérifiez la grille avant d'en nommer un.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="a3">
+          <span class="body">
+            <span class="q" data-en="Number of units for the quote">Nombre d'appareils pour la soumission</span>
+            <span class="hint" data-en="Two separate single-zone systems in two rooms is quoted as two units — and the LogisVert rebate counts per unit.">Deux mono-zones séparés dans deux pièces se chiffrent comme deux appareils — et la subvention LogisVert compte par appareil.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="a4">
+          <span class="body">
+            <span class="q" data-en="Indoor wall and the pipe run through it are identified">Le mur intérieur et le passage des tuyaux sont identifiés</span>
+            <span class="hint" data-en="Which wall for the indoor head, where the outdoor unit lands, and what the line has to cross: brick, stone, a finished basement, a garage.">Quel mur pour la tête intérieure, où l'unité extérieure atterrit, et ce que la ligne doit traverser : brique, pierre, sous-sol fini, garage.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="route-block" data-block="multizone">
+      <div class="rb-head"><span class="sec-num">B</span><h3>Multizone</h3></div>
+      <div class="items">
+        <label class="item" data-blocker>
+          <input type="checkbox" data-id="m1">
+          <span class="body">
+            <span class="q" data-en="The client has been told: no online price on multizone">Le client a été prévenu : aucun prix en ligne en multizone</span>
+            <span class="hint" data-en="The price depends on the number of indoor heads and the style of each one, so the tool cannot produce a range. Say it plainly, then book the visit — the rebate amount is the one thing we can already confirm.">Le prix dépend du nombre de têtes intérieures et du style de chacune, alors l'outil ne peut pas sortir de fourchette. Dites-le franchement, puis réservez la visite — le montant de la subvention est la seule chose qu'on peut déjà confirmer.</span>
+            <span class="say" data-en="&ldquo;Multizone is custom quoted — I'd be making up a number over the phone. The visit is free and you get a firm price.&rdquo;">« Le multizone se chiffre sur mesure — je vous inventerais un chiffre au téléphone. La visite est gratuite et vous repartez avec un prix ferme. »</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="m2">
+          <span class="body">
+            <span class="q" data-en="Room-by-room list, with the style wanted for each">Liste pièce par pièce, avec le style voulu pour chacune</span>
+            <span class="hint" data-en="Ductless heads, ducted heads or a mix — the outdoor unit runs from 18k to 42k depending on the total. Write down the room, its rough size and its floor.">Têtes sans conduits, avec conduits ou un mélange des deux — l'unité extérieure va de 18k à 42k selon le total. Notez la pièce, sa grandeur approximative et son étage.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="m3">
+          <span class="body">
+            <span class="q" data-en="Path for the lines between the outdoor unit and each head">Parcours des lignes entre l'unité extérieure et chaque tête</span>
+            <span class="hint" data-en="Basement, attic, closets, soffits. This is what makes a multizone long or impossible — flag anything that looks tight so the visit is booked with enough time.">Sous-sol, grenier, garde-robes, soffites. C'est ce qui rend un multizone long ou impossible — signalez tout ce qui semble serré pour qu'on réserve assez de temps à la visite.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="route-block" data-block="central">
+      <div class="rb-head"><span class="sec-num">C</span><h3 data-en="Central — complete system">Centrale — système complet</h3></div>
+      <div class="items">
+        <label class="item">
+          <input type="checkbox" data-id="c1">
+          <span class="body">
+            <span class="q" data-en="Size in tons noted: 2, 3, 4 or 5">Capacité en tonnes notée : 2, 3, 4 ou 5</span>
+            <span class="hint" data-en="From the existing nameplate on a replacement (036 = 3 tons), from the house otherwise. Confirmed on site.">À partir de la plaque existante sur un remplacement (036 = 3 tonnes), à partir de la maison autrement. Confirmée sur place.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="c2">
+          <span class="body">
+            <span class="q" data-en="What is being removed is identified">Ce qu'on enlève est identifié</span>
+            <span class="hint" data-en="Old furnace, old air handler, old condenser, coil. Removal and disposal are included — say so, it is part of the value.">Vieille fournaise, vieux ventilo-convecteur, vieux condenseur, serpentin. L'enlèvement et la disposition sont inclus — dites-le, ça fait partie de la valeur.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="c3">
+          <span class="body">
+            <span class="q" data-en="Electric backup: the panel can carry it">Appoint électrique : le panneau peut le porter</span>
+            <span class="hint" data-en="The air handler comes with built-in electric backup heat, so the electrical panel matters as much as the ductwork. Note the amperage, free breaker spaces, and the panel's location. Photo of the panel with the door open — always.">Le ventilo-convecteur arrive avec un chauffage d'appoint électrique intégré, alors le panneau électrique compte autant que les conduits. Notez l'ampérage, les espaces libres pour disjoncteurs et l'emplacement du panneau. Photo du panneau porte ouverte — toujours.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="c4">
+          <span class="body">
+            <span class="q" data-en="Mechanical room and duct connection seen">Salle mécanique et raccordement aux conduits vus</span>
+            <span class="hint" data-en="Sheet metal integration and a new Honeywell thermostat are included. Note the access to the room, the plenum, the return, the filter and the condensate drain.">L'intégration en tôlerie et un nouveau thermostat Honeywell sont inclus. Notez l'accès à la salle, le plénum, le retour d'air, le filtre et le drain de condensat.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="route-block" data-block="addon">
+      <div class="rb-head"><span class="sec-num">D</span><h3 data-en="Central — coil on the existing furnace">Centrale — serpentin sur fournaise existante</h3></div>
+      <div class="items">
+        <label class="item">
+          <input type="checkbox" data-id="d1">
+          <span class="body">
+            <span class="q" data-en="The furnace we keep is worth keeping">La fournaise qu'on garde vaut la peine d'être gardée</span>
+            <span class="hint" data-en="Brand, energy, age, condition. The furnace stays as backup heat, so a unit at the end of its life turns the project back into route C — better to say it now than a year from now.">Marque, énergie, âge, état. La fournaise reste le chauffage d'appoint, alors un appareil en fin de vie ramène le projet vers la route C — mieux vaut le dire maintenant que dans un an.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="d2">
+          <span class="body">
+            <span class="q" data-en="Size in tons noted: 2, 3, 4 or 5">Capacité en tonnes notée : 2, 3, 4 ou 5</span>
+            <span class="hint" data-en="The coil has to match the furnace's airflow. Take a photo of the furnace nameplate as well as the outdoor one.">Le serpentin doit correspondre au débit d'air de la fournaise. Prenez la photo de la plaque de la fournaise en plus de celle de l'extérieur.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="d3">
+          <span class="body">
+            <span class="q" data-en="Room above the furnace for the coil">De la place au-dessus de la fournaise pour le serpentin</span>
+            <span class="hint" data-en="The coil is installed on the existing furnace and ductwork, with sheet metal integration and a new Honeywell thermostat. Low ceiling, tight plenum, pipes in the way: note it and photograph it.">Le serpentin s'installe sur la fournaise et les conduits existants, avec intégration en tôlerie et un nouveau thermostat Honeywell. Plafond bas, plénum serré, tuyaux dans le chemin : notez-le et photographiez-le.</span>
+          </span>
+        </label>
+        <label class="item">
+          <input type="checkbox" data-id="d4">
+          <span class="body">
+            <span class="q" data-en="Condensate drain available nearby">Un drain de condensat est disponible à proximité</span>
+            <span class="hint" data-en="Floor drain, laundry tub, or a pump to add. It is a small detail that turns into a change order on installation day.">Drain de plancher, cuve de lavage, ou une pompe à ajouter. C'est un petit détail qui devient un extra le jour de l'installation.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="notes">
+      <label for="n2" data-en="Notes">Notes</label>
+      <textarea id="n2" data-id="n2" data-ph-en="Rooms, capacity, brand and age of the existing equipment…" placeholder="Pièces, capacité, marque et âge de l'équipement actuel…"></textarea>
+    </div>
+  </section>
+
+  <!-- 3 — DOSSIER -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2 data-en="The file we bring back">Le dossier qu'on rapporte</h2>
+      <p class="sec-sub" data-en="What is missing here is what the estimate will be wrong about. Photos are the fastest way to get it right — ask for them while the client is still on the line.">Ce qui manque ici, c'est ce sur quoi l'estimation va se tromper. Les photos sont le chemin le plus court vers un bon prix — demandez-les pendant que le client est encore en ligne.</p>
+    </div>
+    <div class="items">
+      <label class="item" data-blocker>
+        <input type="checkbox" data-id="f1">
+        <span class="body">
+          <span class="q" data-en="Full contact details: name, phone, email, address, city, postal code">Coordonnées complètes : nom, téléphone, courriel, adresse, ville, code postal</span>
+          <span class="hint" data-en="The email is not optional — the PDF estimate is sent there, and it is what the client shows their spouse.">Le courriel n'est pas optionnel — l'estimation PDF part là, et c'est ce que le client montre à son conjoint.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f2">
+        <span class="body">
+          <span class="q" data-en="Photo — outdoor nameplate (required)">Photo — plaque signalétique extérieure (obligatoire)</span>
+          <span class="hint" data-en="The label, often metal, on the side panel near the pipes. The model number is what gives us the capacity. Without it, everything else is guesswork.">L'étiquette, souvent métallique, sur le panneau latéral près des tuyaux. Le numéro de modèle est ce qui nous donne la capacité. Sans elle, tout le reste est de la devinette.</span>
+          <span class="say" data-en="&ldquo;Take a picture of the label on the side of the outdoor unit — get close enough that the model number is readable.&rdquo;">« Prenez la plaque sur le côté de l'unité extérieure en photo — assez proche pour qu'on lise le numéro de modèle. »</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f3">
+        <span class="body">
+          <span class="q" data-en="Photo — outdoor unit, overall view">Photo — unité extérieure, vue d'ensemble</span>
+          <span class="hint" data-en="Backed up far enough to show the mounting, the clearance, the wall and the ground around it.">Reculé assez pour montrer le support, le dégagement, le mur et le terrain autour.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f4">
+        <span class="body">
+          <span class="q" data-en="Photo — indoor unit and its nameplate">Photo — unité intérieure et sa plaque</span>
+          <span class="hint" data-en="Mini-split: lift the front panel, the label is on the right side or under the cover. Central: on the air handler or furnace cabinet, often inside the front panel.">Minisplit : soulevez le panneau avant, l'étiquette est du côté droit ou sous le couvercle. Centrale : sur le cabinet du ventilo-convecteur ou de la fournaise, souvent derrière le panneau avant.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f5">
+        <span class="body">
+          <span class="q" data-en="Photo — electrical panel, door open">Photo — panneau électrique, porte ouverte</span>
+          <span class="hint" data-en="Amperage, free breaker spaces, and how far the panel sits from where the outdoor unit goes. A full 100 A panel changes the project, and it is better known now.">Ampérage, espaces libres pour disjoncteurs, et la distance entre le panneau et l'emplacement de l'unité extérieure. Un panneau de 100 A plein change le projet, et ça se sait mieux maintenant.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f6">
+        <span class="body">
+          <span class="q" data-en="New installation: photos of the planned locations">Nouvelle installation : photos des emplacements prévus</span>
+          <span class="hint" data-en="No nameplate to read, so we work off the walls: the room, the wall for the head, the outside spot, the electrical panel.">Pas de plaque à lire, alors on travaille avec les murs : la pièce, le mur pour la tête, l'emplacement extérieur, le panneau électrique.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f7">
+        <span class="body">
+          <span class="q" data-en="Line run: is it longer than a standard length?">Ligne frigorifique : est-ce plus long qu'une longueur standard?</span>
+          <span class="hint" data-en="A long run through walls or around the house, a unit on a roof or three floors up: it changes the material and the day. Note the rough distance between the two units.">Un long parcours dans les murs ou autour de la maison, une unité sur un toit ou au troisième : ça change le matériel et la journée. Notez la distance approximative entre les deux unités.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f8">
+        <span class="body">
+          <span class="q" data-en="Outdoor placement and what surrounds it">Emplacement extérieur et ce qu'il y a autour</span>
+          <span class="hint" data-en="On the ground or on a wall bracket, snow and roof runoff, the neighbour's window, the patio, a gate too narrow for the unit to pass.">Au sol ou sur support mural, la neige et l'eau qui tombe du toit, la fenêtre du voisin, le patio, une clôture trop étroite pour passer l'appareil.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="f9">
+        <span class="body">
+          <span class="q" data-en="Building constraints: syndicate, permit, wall type, access">Contraintes du bâtiment : syndicat, permis, type de mur, accès</span>
+          <span class="hint" data-en="Condo syndicate approval, municipal permit or noise by-law, brick or stone wall, access to the attic or crawl space for ducted and multizone work.">Accord du syndicat en copropriété, permis municipal ou règlement sur le bruit, mur de brique ou de pierre, accès au grenier ou au vide sanitaire pour le gainable et le multizone.</span>
+        </span>
+      </label>
+    </div>
+    <div class="notes">
+      <label for="n3" data-en="Notes">Notes</label>
+      <textarea id="n3" data-id="n3" data-ph-en="Photos received, panel amperage, distance, constraints…" placeholder="Photos reçues, ampérage du panneau, distance, contraintes…"></textarea>
+    </div>
+  </section>
+
+  <!-- 4 — LOGISVERT -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2 data-en="LogisVert rebate">Subvention LogisVert</h2>
+      <p class="sec-sub" data-en="It is often the difference between a yes and a maybe. Qualify it on the call — but never present it as a discount on our invoice.">C'est souvent la différence entre un oui et un peut-être. Qualifiez-la pendant l'appel — mais ne la présentez jamais comme un rabais sur notre facture.</p>
+    </div>
+    <div class="items">
+      <label class="item">
+        <input type="checkbox" data-id="s1">
+        <span class="body">
+          <span class="q" data-en="The client is the Hydro-Québec account holder for the home">Le client est titulaire du compte Hydro-Québec de la résidence</span>
+          <span class="hint" data-en="The application is filed in the account holder's name, for the home where the unit is installed.">La demande se fait au nom du titulaire du compte, pour la résidence où l'appareil est installé.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="s2">
+        <span class="body">
+          <span class="q" data-en="The rebate amount for the proposed model is known">Le montant pour le modèle proposé est connu</span>
+          <span class="hint" data-en="It goes by the model's AHRI number and runs from a few hundred dollars to several thousand depending on the model and the capacity. The estimate tool shows the exact amount — and it multiplies by the number of units.">Il se calcule par le numéro AHRI du modèle et va de quelques centaines à plusieurs milliers de dollars selon le modèle et la capacité. L'outil d'estimation affiche le montant exact — et il se multiplie par le nombre d'appareils.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="s3">
+        <span class="body">
+          <span class="q" data-en="The client understands they file the application themselves, after the work">Le client comprend qu'il dépose lui-même la demande, après les travaux</span>
+          <span class="hint" data-en="The rebate is not deducted from our invoice. We hand over the complete close-out package — invoice, photos of the serial plates, LogisVert guide — and the client submits it. Say it now; a client who expects a discount on the invoice is a problem on installation day.">La subvention n'est pas déduite de notre facture. On remet le dossier de fermeture complet — facture, photos des plaques de série, guide LogisVert — et le client le soumet. Dites-le maintenant; un client qui s'attend à un rabais sur la facture, c'est un problème le jour de l'installation.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="s4">
+        <span class="body">
+          <span class="q" data-en="Eligibility will be confirmed at the visit">L'admissibilité sera confirmée à la visite</span>
+          <span class="hint" data-en="Quote the amount as eligible, per the program in effect — not as money in the bank. Gree warranty registration is handled by us either way.">Présentez le montant comme admissible, selon le barème en vigueur — pas comme de l'argent acquis. L'enregistrement de la garantie Gree est fait par nous dans tous les cas.</span>
+        </span>
+      </label>
+    </div>
+    <div class="notes">
+      <label for="n4" data-en="Notes">Notes</label>
+      <textarea id="n4" data-id="n4" data-ph-en="Account holder, amount quoted, client's questions…" placeholder="Titulaire du compte, montant annoncé, questions du client…"></textarea>
+    </div>
+  </section>
+
+  <!-- 5 — PRIX -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2 data-en="Frame the price">Cadrer le prix</h2>
+      <p class="sec-sub" data-en="A qualified lead knows the range, knows what is inside it, and reacted to it out loud. A lead that never heard a number is a visit we may not get paid for.">Un client qualifié connaît la fourchette, sait ce qu'elle contient, et a réagi à voix haute. Un client qui n'a jamais entendu de chiffre, c'est une visite qu'on risque de faire pour rien.</p>
+    </div>
+    <div class="items">
+      <label class="item">
+        <input type="checkbox" data-id="p1">
+        <span class="body">
+          <span class="q" data-en="The range was said out loud: complete installation, taxes in">La fourchette a été dite à voix haute : installation complète, taxes incluses</span>
+          <span class="hint" data-en="The online tool gives a range for the exact configuration, all families side by side. Give the range, not a single number.">L'outil en ligne sort une fourchette pour la configuration exacte, toutes les familles côte à côte. Donnez la fourchette, pas un chiffre unique.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="p2">
+        <span class="body">
+          <span class="q" data-en="What's included was named, not assumed">Ce qui est inclus a été nommé, pas sous-entendu</span>
+          <span class="hint" data-en="Complete installation by our team, new copper lineset, rack, electrical whip and disconnect, removal and disposal of the old equipment, 10+2 year parts and compressor warranty, 1 year labour warranty, LogisVert documents, Gree warranty registered for the client. On central: sheet metal integration and a new Honeywell thermostat.">Installation complète par notre équipe, ligne de cuivre neuve, support, fouet électrique et sectionneur, enlèvement et disposition des vieux équipements, garantie 10+2 ans pièces et compresseur, garantie main-d'œuvre de 1 an, documents LogisVert, garantie Gree enregistrée pour le client. En centrale : intégration en tôlerie et nouveau thermostat Honeywell.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="p3">
+        <span class="body">
+          <span class="q" data-en="The client knows the final price is confirmed on site">Le client sait que le prix final se confirme sur place</span>
+          <span class="hint" data-en="The visit is free and with no obligation. The estimate is a guide, based on the photos and the information given.">La visite est gratuite et sans engagement. L'estimation est indicative, établie à partir des photos et des renseignements fournis.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="p4">
+        <span class="body">
+          <span class="q" data-en="The client's reaction to the range is written down">La réaction du client à la fourchette est notée</span>
+          <span class="hint" data-en="Ask directly, and write down the answer in their words. Silence on the price is not agreement.">Demandez-le franchement, et notez la réponse dans ses mots. Un silence sur le prix, ce n'est pas un accord.</span>
+          <span class="say" data-en="&ldquo;Does that fit what you had in mind?&rdquo;">« Est-ce que ça entre dans ce que vous aviez en tête? »</span>
+        </span>
+      </label>
+    </div>
+    <div class="notes">
+      <label for="n5" data-en="Notes">Notes</label>
+      <textarea id="n5" data-id="n5" data-ph-en="Range quoted, reaction, objections…" placeholder="Fourchette annoncée, réaction, objections…"></textarea>
+    </div>
+  </section>
+
+  <!-- 6 — PROCHAINE ÉTAPE -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <h2 data-en="Close on a next step">Fermer sur une prochaine étape</h2>
+      <p class="sec-sub" data-en="A call ends with a date, or it did not end. Two ways in: a 30-minute virtual estimate, or a free on-site visit.">Un appel se termine par une date, sinon il ne s'est pas terminé. Deux portes d'entrée : une estimation virtuelle de 30 minutes, ou une visite sur place gratuite.</p>
+    </div>
+    <div class="items">
+      <label class="item" data-blocker>
+        <input type="checkbox" data-id="x1">
+        <span class="body">
+          <span class="q" data-en="A date and a time are set">Une date et une heure sont fixées</span>
+          <span class="hint" data-en="Virtual estimate: 30-minute slots, weekdays, 9 a.m. to 5 p.m., up to 14 days ahead. On-site visit: per the crew's schedule. &ldquo;I'll call you back&rdquo; is not a next step.">Estimation virtuelle : créneaux de 30 minutes, jours ouvrables, de 9 h à 17 h, jusqu'à 14 jours à l'avance. Visite sur place : selon l'horaire de l'équipe. « Je vous rappelle » n'est pas une prochaine étape.</span>
+          <span class="say" data-en="&ldquo;I have Tuesday at 10 or Thursday at 2 — which works better?&rdquo;">« J'ai mardi 10 h ou jeudi 14 h — lequel vous convient le mieux? »</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="x2">
+        <span class="body">
+          <span class="q" data-en="Everyone who decides will be there">Tous ceux qui décident seront présents</span>
+          <span class="hint" data-en="Confirm it when booking, not at the door. A visit with one spouse out of two usually turns into a second visit.">Confirmez-le en réservant, pas sur le pas de la porte. Une visite avec un conjoint sur deux devient généralement une deuxième visite.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="x3">
+        <span class="body">
+          <span class="q" data-en="The PDF estimate has been sent to their email">L'estimation PDF est envoyée à son courriel</span>
+          <span class="hint" data-en="It shows every option side by side with the eligible rebate. It is what the client compares against the competitor's quote.">Elle montre toutes les options côte à côte avec la subvention admissible. C'est ce que le client compare à la soumission du concurrent.</span>
+        </span>
+      </label>
+      <label class="item">
+        <input type="checkbox" data-id="x4">
+        <span class="body">
+          <span class="q" data-en="File written up and follow-up scheduled">Dossier écrit et relance planifiée</span>
+          <span class="hint" data-en="Route, capacity, photos received, rebate amount quoted, price reaction, objections. The next person to open this file should not have to call and ask again.">Route, capacité, photos reçues, montant de subvention annoncé, réaction au prix, objections. La prochaine personne qui ouvre ce dossier ne devrait pas avoir à rappeler pour redemander.</span>
+        </span>
+      </label>
+    </div>
+    <div class="notes">
+      <label for="n6" data-en="Notes">Notes</label>
+      <textarea id="n6" data-id="n6" data-ph-en="Appointment set for… follow up on…" placeholder="Rendez-vous fixé le… relance le…"></textarea>
+    </div>
+  </section>
+
+  <!-- DRAPEAUX -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">!</span>
+      <h2 data-en="Red flags — stop and check">Drapeaux rouges — on arrête et on valide</h2>
+      <p class="sec-sub" data-en="None of these is a refusal on the spot. Each one is a reason to check with the office before promising a price, a date or a rebate.">Aucun de ces cas n'est un refus sur-le-champ. Chacun est une raison de valider avec le bureau avant de promettre un prix, une date ou une subvention.</p>
+    </div>
+    <div class="flags">
+      <div class="flag"><span class="fx">↯</span><span><b data-en="Postal code outside the service area.">Code postal hors de la zone de service.</b><span class="then" data-en="Take the request down, say we'll confirm whether we can serve them, and check with the office.">Notez la demande, dites qu'on va confirmer si on peut le desservir, et validez avec le bureau.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="Tenant, or a spouse who &ldquo;will decide later&rdquo;.">Locataire, ou un conjoint qui « décidera plus tard ».</b><span class="then" data-en="Get the decision-maker on the line before booking anything.">Ayez le décideur en ligne avant de réserver quoi que ce soit.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="Condo without the syndicate's approval for the outdoor unit.">Copropriété sans accord du syndicat pour l'unité extérieure.</b><span class="then" data-en="Ask for it in writing before the visit — it is the most common cause of a cancelled install.">Demandez-le par écrit avant la visite — c'est la cause la plus fréquente d'une installation annulée.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="Commercial, industrial or a full apartment building.">Commercial, industriel ou immeuble à logements complet.</b><span class="then" data-en="Outside what the online tool prices. Pass it to the office.">En dehors de ce que l'outil en ligne chiffre. Transférez au bureau.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="No photos after two requests.">Aucune photo après deux demandes.</b><span class="then" data-en="Offer the virtual estimate — 30 minutes on video and we read the nameplates ourselves.">Proposez l'estimation virtuelle — 30 minutes en vidéo et on lit les plaques nous-mêmes.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="&ldquo;Just give me a price over the phone.&rdquo;">« Donnez-moi juste un prix au téléphone. »</b><span class="then" data-en="Give the range from the tool and nothing more. A firm number without a visit is a number we end up eating.">Donnez la fourchette de l'outil et rien de plus. Un prix ferme sans visite, c'est un prix qu'on finit par absorber.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="Multizone with a price expectation from a single-zone ad.">Multizone avec une attente de prix basée sur une annonce de mono-zone.</b><span class="then" data-en="Reset the expectation on the call. Several heads on one outdoor unit is a different project.">Recadrez l'attente pendant l'appel. Plusieurs têtes sur une unité extérieure, c'est un autre projet.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="Full 100 A panel with an electric backup project.">Panneau de 100 A plein avec un projet d'appoint électrique.</b><span class="then" data-en="Flag it before the visit — the electrical work can change the project's whole shape.">Signalez-le avant la visite — les travaux électriques peuvent changer toute la forme du projet.</span></span></div>
+      <div class="flag"><span class="fx">↯</span><span><b data-en="&ldquo;I need it installed this week.&rdquo;">« Il me le faut cette semaine. »</b><span class="then" data-en="Check equipment availability and the schedule before committing to a date.">Vérifiez la disponibilité de l'équipement et l'horaire avant de vous engager sur une date.</span></span></div>
+    </div>
+  </section>
+
+  <!-- RÉFÉRENCE -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num" data-en="REF">RÉF</span>
+      <h2 data-en="What we sell — quick reference">Ce qu'on vend — référence rapide</h2>
+      <p class="sec-sub" data-en="Check it before naming a model or a capacity on the phone.">À vérifier avant de nommer un modèle ou une capacité au téléphone.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-en="Wall-mounted, single zone">Murale mono-zone</th>
+            <th>12k</th><th>18k</th><th>24k</th><th>36k</th>
+            <th data-en="Heating down to">Chauffe jusqu'à</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th>Gree Charmo</th><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td>−25 °C</td></tr>
+          <tr><th>Gree Clivia</th><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td>−30 °C</td></tr>
+          <tr><th>Gree Airy</th><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td data-en="−30 °C · highest efficiency">−30 °C · la plus efficace</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note" data-en="The online tool always shows the three families side by side for the chosen capacity, and marks the ones not offered in that size.">L'outil en ligne affiche toujours les trois familles côte à côte pour la capacité choisie, et indique celles qui ne sont pas offertes dans cette taille.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-en="Other indoor styles">Autres styles intérieurs</th>
+            <th data-en="Available in">Offert en</th>
+            <th data-en="Worth knowing">Bon à savoir</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th data-en="Ceiling cassette">Cassette au plafond</th><td>Airy 12k · Clivia 12k, 24k</td><td data-en="Needs an attic or a dropped ceiling. Decorative grille included in the quote.">Il faut un grenier ou un plafond suspendu. Grille décorative incluse à la soumission.</td></tr>
+          <tr><th data-en="Floor console">Console au plancher</th><td>Airy 12k</td><td data-en="Sits low on the wall — for a room where a high unit doesn't work.">Se pose en bas du mur — pour une pièce où une unité en hauteur ne fonctionne pas.</td></tr>
+          <tr><th data-en="Ducted head">Gainable</th><td>Airy 12k · Clivia 12k, 18k, 24k</td><td data-en="Hidden in a soffit or a closet, with short duct runs. Needs access.">Caché dans un soffite ou un garde-robe, avec de courts conduits. Il faut un accès.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-en="Central and multizone">Centrale et multizone</th>
+            <th data-en="Capacities">Capacités</th>
+            <th data-en="Online price">Prix en ligne</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th data-en="Flexx — complete system (air handler)">Flexx — système complet (ventilo-convecteur)</th><td class="num" data-en="2, 3, 4, 5 tons">2, 3, 4, 5 tonnes</td><td class="y" data-en="Yes — range">Oui — fourchette</td></tr>
+          <tr><th data-en="Flexx Add-On — coil on existing furnace">Flexx Add-On — serpentin sur fournaise</th><td class="num" data-en="2, 3, 4, 5 tons">2, 3, 4, 5 tonnes</td><td class="y" data-en="Yes — range">Oui — fourchette</td></tr>
+          <tr><th data-en="Multizone (ductless, ducted or mixed heads)">Multizone (têtes sans conduits, avec conduits ou mixtes)</th><td class="num" data-en="18, 24, 30, 36, 42k outdoor">18, 24, 30, 36, 42k extérieur</td><td class="n" data-en="No — visit required, rebate confirmed">Non — visite requise, subvention confirmée</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-head" style="border-top:1px solid var(--line-soft)">
+      <span class="sec-num">↳</span>
+      <h2 data-en="Service area">Zone de service</h2>
+      <p class="sec-sub" data-en="West Island; Lachine and LaSalle; Vaudreuil-Dorion, Pincourt, Île-Perrot and Terrasse-Vaudreuil; Saint-Lazare and Les Cèdres; Hudson and Rigaud. Anything else goes to the office before we promise a visit.">West Island; Lachine et LaSalle; Vaudreuil-Dorion, Pincourt, L'Île-Perrot et Terrasse-Vaudreuil; Saint-Lazare et Les Cèdres; Hudson et Rigaud. Tout le reste passe par le bureau avant qu'on promette une visite.</p>
+    </div>
+    <div class="fsa">
+      <code>H8N</code><code>H8R</code><code>H8S</code><code>H8T</code><code>H8Y</code><code>H8Z</code>
+      <code>H9A</code><code>H9B</code><code>H9C</code><code>H9E</code><code>H9G</code><code>H9H</code>
+      <code>H9J</code><code>H9K</code><code>H9P</code><code>H9R</code><code>H9S</code><code>H9W</code><code>H9X</code>
+      <code>J7T</code><code>J7V</code><code>J7W</code><code>J0P</code>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p data-en="This checklist mirrors the online estimate tool: same service area, same product lines, same inclusions. If the tool changes, this page changes with it.">Cette grille suit l'outil d'estimation en ligne : même zone de service, mêmes gammes, mêmes inclusions. Si l'outil change, cette page change avec lui.</p>
+  <p class="co">Groupe DPSD Inc · RBQ 5733-3916-01 · <span data-en="CMMTQ member">Membre de la CMMTQ</span> · (514) 969-8786 · info@dpsdair.ca</p>
+</footer>
+
+<script>
+  (function () {
+    var KEY = "dpsd-qualification-v1";
+    var boxes = Array.prototype.slice.call(document.querySelectorAll(".item input[type=checkbox]"));
+    var notes = Array.prototype.slice.call(document.querySelectorAll("textarea[data-id]"));
+    var routeButtons = Array.prototype.slice.call(document.querySelectorAll(".route"));
+    var blocks = Array.prototype.slice.call(document.querySelectorAll(".route-block"));
+    var verdict = document.getElementById("verdict");
+    var blockCount = document.getElementById("blockCount");
+    var blockBar = document.getElementById("blockBar");
+    var allCount = document.getElementById("allCount");
+    var allBar = document.getElementById("allBar");
+    var routeChip = document.getElementById("routeChip");
+    var routeEmpty = document.getElementById("routeEmpty");
+    var langBtn = document.getElementById("lang");
+
+    var ROUTE_NAMES = {
+      murale: { fr: "Route A · Murale mono-zone", en: "Route A · Wall-mounted, single zone" },
+      multizone: { fr: "Route B · Multizone", en: "Route B · Multizone" },
+      central: { fr: "Route C · Centrale, système complet", en: "Route C · Central, complete system" },
+      addon: { fr: "Route D · Centrale, serpentin", en: "Route D · Central, cased coil" }
+    };
+
+    var VERDICTS = {
+      open: { fr: "Appel en cours", en: "Call in progress" },
+      blocked: { fr: "Bloquants à confirmer", en: "Blockers to confirm" },
+      route: { fr: "Qualifié — router le projet", en: "Qualified — route the project" },
+      partial: { fr: "Qualifié — dossier à compléter", en: "Qualified — file to complete" },
+      ready: { fr: "Prêt pour la visite", en: "Ready for the visit" }
+    };
+
+    var lang = "fr";
+    var route = null;
+
+    function save() {
+      var state = { lang: lang, route: route, checked: {}, notes: {} };
+      boxes.forEach(function (b) { if (b.checked) state.checked[b.dataset.id] = 1; });
+      notes.forEach(function (n) { if (n.value) state.notes[n.dataset.id] = n.value; });
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
+    }
+
+    function load() {
+      var raw = null;
+      try { raw = localStorage.getItem(KEY); } catch (e) { return; }
+      if (!raw) return;
+      var state;
+      try { state = JSON.parse(raw); } catch (e) { return; }
+      if (!state || typeof state !== "object") return;
+      if (state.checked) boxes.forEach(function (b) { b.checked = !!state.checked[b.dataset.id]; });
+      if (state.notes) notes.forEach(function (n) { n.value = state.notes[n.dataset.id] || ""; });
+      if (state.route && ROUTE_NAMES[state.route]) route = state.route;
+      if (state.lang === "en") setLang("en");
+    }
+
+    function visibleBoxes() {
+      return boxes.filter(function (b) {
+        var block = b.closest(".route-block");
+        return !block || block.classList.contains("on");
+      });
+    }
+
+    function refresh() {
+      var vis = visibleBoxes();
+      var blockers = vis.filter(function (b) { return b.closest(".item").hasAttribute("data-blocker"); });
+      var blockersDone = blockers.filter(function (b) { return b.checked; }).length;
+      var done = vis.filter(function (b) { return b.checked; }).length;
+      var pct = vis.length ? Math.round((done / vis.length) * 100) : 0;
+
+      blockCount.textContent = blockersDone + "/" + blockers.length;
+      blockBar.querySelector("i").style.width = (blockersDone / blockers.length) * 100 + "%";
+      blockBar.classList.toggle("full", blockersDone === blockers.length);
+      allCount.textContent = pct + " %";
+      allBar.style.width = pct + "%";
+
+      if (route) {
+        routeChip.hidden = false;
+        routeChip.textContent = ROUTE_NAMES[route][lang];
+      } else {
+        routeChip.hidden = true;
+      }
+
+      var key;
+      if (done === 0) key = "open";
+      else if (blockersDone < blockers.length) key = "blocked";
+      else if (!route) key = "route";
+      else if (pct < 85) key = "partial";
+      else key = "ready";
+
+      verdict.textContent = VERDICTS[key][lang];
+      verdict.dataset.state =
+        key === "ready" ? "ready" : key === "blocked" ? "blocked" : key === "open" ? "open" : "partial";
+    }
+
+    function applyRoute() {
+      routeButtons.forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.route === route));
+      });
+      blocks.forEach(function (bl) {
+        bl.classList.toggle("on", bl.dataset.block === route);
+      });
+      routeEmpty.style.display = route ? "none" : "";
+      refresh();
+    }
+
+    function setLang(next) {
+      lang = next;
+      var nodes = document.querySelectorAll("[data-en]");
+      Array.prototype.forEach.call(nodes, function (el) {
+        if (!el.hasAttribute("data-fr")) el.setAttribute("data-fr", el.textContent);
+        el.textContent = lang === "en" ? el.getAttribute("data-en") : el.getAttribute("data-fr");
+      });
+      langBtn.textContent = lang === "en" ? "Français" : "English";
+      notes.forEach(function (n) {
+        if (!n.hasAttribute("data-ph-fr")) n.setAttribute("data-ph-fr", n.placeholder);
+        n.placeholder = lang === "en"
+          ? n.getAttribute("data-ph-en") || ""
+          : n.getAttribute("data-ph-fr") || "";
+      });
+      refresh();
+    }
+
+    boxes.forEach(function (b) {
+      b.addEventListener("change", function () { refresh(); save(); });
+    });
+
+    notes.forEach(function (n) {
+      n.addEventListener("input", save);
+    });
+
+    routeButtons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        route = route === b.dataset.route ? null : b.dataset.route;
+        applyRoute();
+        save();
+      });
+    });
+
+    langBtn.addEventListener("click", function () {
+      setLang(lang === "fr" ? "en" : "fr");
+      save();
+    });
+
+    document.getElementById("print").addEventListener("click", function () { window.print(); });
+
+    document.getElementById("reset").addEventListener("click", function () {
+      var msg = lang === "en"
+        ? "Clear this checklist and start a new call?"
+        : "Effacer cette grille et commencer un nouvel appel?";
+      if (!window.confirm(msg)) return;
+      boxes.forEach(function (b) { b.checked = false; });
+      notes.forEach(function (n) { n.value = ""; });
+      route = null;
+      applyRoute();
+      save();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    load();
+    applyRoute();
+  })();
+</script>
