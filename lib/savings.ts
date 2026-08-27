@@ -242,6 +242,39 @@ export function rateDAnnualBill(
 
 export type AcType = "none" | "window" | "central";
 
+// Piscine et spa : gros consommateurs qu'il faut sortir de la facture AVANT
+// d'en déduire le chauffage. Une piscine chauffée, c'est un bloc d'été ; un
+// spa utilisé l'hiver perd d'autant plus de chaleur qu'il fait froid, donc
+// une partie de sa consommation suit les degrés-jours — exactement la même
+// signature que le chauffage de la maison. Sans les retirer, on attribuerait
+// leur consommation à la thermopompe et on promettrait des économies qui
+// n'existent pas.
+export type PoolType = "none" | "pump" | "heatPump" | "electric";
+export type SpaType = "none" | "summer" | "yearRound";
+
+// kWh par saison : filtration seule ; filtration + thermopompe de piscine ;
+// filtration + chauffe-eau électrique (le poste le plus lourd d'une maison).
+export const POOL_KWH: Record<PoolType, number> = {
+  none: 0,
+  pump: 1800,
+  heatPump: 5300,
+  electric: 10800,
+};
+
+// Spa : l'été seulement (vidangé ou éteint l'hiver), ou à l'année.
+export const SPA_KWH: Record<SpaType, number> = {
+  none: 0,
+  summer: 1400,
+  yearRound: 3200,
+};
+
+// Saison de piscine, mai → septembre (part de la consommation par mois).
+export const POOL_SEASON = [0, 0, 0, 0, 0.12, 0.24, 0.28, 0.24, 0.12, 0, 0, 0];
+
+// Spa à l'année : une part constante (filtration, veille) et une part qui
+// suit le froid (pertes du couvercle et de la cuve).
+export const SPA_FLAT_SHARE = 0.45;
+
 // Consommation de base : ce qui ne dépend pas de la météo. L'eau chaude
 // domine et suit le nombre de personnes ; l'éclairage et les électros sont
 // à peu près fixes par ménage. Chauffe-eau électrique supposé — la norme
@@ -260,6 +293,7 @@ export type BillBreakdown = {
   totalKwh: number;
   baseKwh: number;
   coolingKwh: number;
+  poolSpaKwh: number; // piscine + spa, retirés avant de déduire le chauffage
   heatingKwh: number; // électricité de chauffage de l'année facturée
   heatingKwhNormalized: number; // ramenée à une année météo normale
   weatherRatio: number; // > 1 = l'année facturée a été plus douce que la normale
@@ -276,6 +310,10 @@ export function breakdownFromBill(input: {
   occupants: number;
   acType: AcType;
   degreeDays: DegreeDays;
+  poolType?: PoolType;
+  spaType?: SpaType;
+  poolKwh?: number; // valeurs connues du client, si elles le sont
+  spaKwh?: number;
   tariff?: Tariff;
 }): BillBreakdown {
   const tariff = input.tariff ?? RATE_D;
@@ -292,6 +330,21 @@ export function breakdownFromBill(input: {
   const cddTotal = dd.monthlyCdd.reduce((a, b) => a + b, 0) || 1;
   const daysTotal = days.reduce((a, b) => a + b, 0);
 
+  // Piscine et spa, répartis sur les mois où ils consomment vraiment.
+  const poolKwh =
+    input.poolKwh ?? POOL_KWH[input.poolType ?? "none"];
+  const spaKwh = input.spaKwh ?? SPA_KWH[input.spaType ?? "none"];
+  const spaYearRound = (input.spaType ?? "none") === "yearRound";
+  const poolSpaMonthly = days.map((d, m) => {
+    const pool = poolKwh * POOL_SEASON[m];
+    const spa = spaYearRound
+      ? spaKwh * SPA_FLAT_SHARE * (d / daysTotal) +
+        spaKwh * (1 - SPA_FLAT_SHARE) * (dd.monthlyHdd[m] / hddTotal)
+      : spaKwh * POOL_SEASON[m];
+    return pool + spa;
+  });
+  const poolSpaKwh = poolSpaMonthly.reduce((a, b) => a + b, 0);
+
   // Facture modélisée pour une quantité annuelle de chauffage donnée : la
   // base s'étale sur l'année, le chauffage suit les degrés-jours, la
   // climatisation suit les degrés-jours de refroidissement.
@@ -299,6 +352,7 @@ export function breakdownFromBill(input: {
     const monthly = days.map(
       (d, m) =>
         (baseKwh * d) / daysTotal +
+        poolSpaMonthly[m] +
         (heatingKwh * dd.monthlyHdd[m]) / hddTotal +
         (coolingKwh * dd.monthlyCdd[m]) / cddTotal
     );
@@ -310,13 +364,15 @@ export function breakdownFromBill(input: {
     // Facture plus basse que la consommation de base estimée : on ne peut
     // pas en tirer de chauffage sans inventer.
     return {
-      totalKwh: baseKwh + coolingKwh,
+      totalKwh: baseKwh + coolingKwh + poolSpaKwh,
       baseKwh,
       coolingKwh,
+      poolSpaKwh,
       heatingKwh: 0,
       heatingKwhNormalized: 0,
       weatherRatio: weatherRatio(dd),
-      effectiveRate: input.billAmount / Math.max(1, baseKwh + coolingKwh),
+      effectiveRate:
+        input.billAmount / Math.max(1, baseKwh + coolingKwh + poolSpaKwh),
       belowBaseLoad: true,
     };
   }
@@ -331,12 +387,13 @@ export function breakdownFromBill(input: {
     else high = mid;
   }
   const heatingKwh = (low + high) / 2;
-  const totalKwh = baseKwh + coolingKwh + heatingKwh;
+  const totalKwh = baseKwh + coolingKwh + poolSpaKwh + heatingKwh;
 
   return {
     totalKwh,
     baseKwh,
     coolingKwh,
+    poolSpaKwh,
     heatingKwh,
     heatingKwhNormalized: heatingKwh * weatherRatio(dd),
     weatherRatio: weatherRatio(dd),

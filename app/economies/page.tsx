@@ -8,12 +8,16 @@ import {
   REALISM_FACTOR,
   areaFromCapacity,
   backupModeFor,
+  POOL_KWH,
+  SPA_KWH,
   breakdownFromBill,
   demandFromArea,
   demandFromConsumption,
   project,
   type AcType,
   type BillBreakdown,
+  type PoolType,
+  type SpaType,
   type CurrentSystemKey,
   type HeatPumpKey,
   type Projection,
@@ -106,6 +110,23 @@ const STRINGS = {
       window: "Appareils de fenêtre",
       central: "Climatisation centrale",
     } as Record<AcType, string>,
+    poolLabel: "Piscine",
+    poolTypes: {
+      none: "Aucune",
+      pump: "Piscine non chauffée (filtration)",
+      heatPump: "Piscine chauffée — thermopompe",
+      electric: "Piscine chauffée — élément électrique",
+    } as Record<PoolType, string>,
+    spaLabel: "Spa",
+    spaTypes: {
+      none: "Aucun",
+      summer: "Spa, l'été seulement",
+      yearRound: "Spa, à l'année",
+    } as Record<SpaType, string>,
+    poolSpaHint:
+      "Une piscine chauffée ou un spa ouvert l'hiver pèsent lourd sur la facture. On les sort du calcul : sans ça, on prendrait leur consommation pour du chauffage et on vous promettrait des économies qui n'arriveraient jamais.",
+    poolSpaKnownLabel: "Consommation piscine et spa, si vous la connaissez (kWh/an)",
+    breakdownPoolSpa: "Piscine et spa",
     breakdownTitle: "Ce que votre facture contient",
     breakdownTotal: (kwh: string, rate: string) =>
       `Environ ${kwh} kWh sur l'année, à ${rate} $/kWh tout compris.`,
@@ -287,6 +308,23 @@ const STRINGS = {
       window: "Window units",
       central: "Central air conditioning",
     } as Record<AcType, string>,
+    poolLabel: "Pool",
+    poolTypes: {
+      none: "None",
+      pump: "Unheated pool (filtration)",
+      heatPump: "Heated pool — heat pump",
+      electric: "Heated pool — electric element",
+    } as Record<PoolType, string>,
+    spaLabel: "Hot tub",
+    spaTypes: {
+      none: "None",
+      summer: "Hot tub, summer only",
+      yearRound: "Hot tub, year-round",
+    } as Record<SpaType, string>,
+    poolSpaHint:
+      "A heated pool or a hot tub kept running through winter weighs heavily on the bill. We take them out of the calculation: otherwise we'd read their usage as heating and promise you savings that would never arrive.",
+    poolSpaKnownLabel: "Pool and hot tub usage, if you know it (kWh/yr)",
+    breakdownPoolSpa: "Pool and hot tub",
     breakdownTitle: "What your bill is made of",
     breakdownTotal: (kwh: string, rate: string) =>
       `About ${kwh} kWh over the year, at ${rate} $/kWh all in.`,
@@ -488,6 +526,9 @@ export default function Page() {
   const [billYear, setBillYear] = useState(BILL_YEARS[0]);
   const [occupants, setOccupants] = useState("3");
   const [acType, setAcType] = useState<AcType>("none");
+  const [poolType, setPoolType] = useState<PoolType>("none");
+  const [spaType, setSpaType] = useState<SpaType>("none");
+  const [poolSpaKnown, setPoolSpaKnown] = useState("");
   const [degreeDays, setDegreeDays] = useState<DegreeDays>(() =>
     normalDegreeDays()
   );
@@ -710,6 +751,12 @@ export default function Page() {
   const efficiency = num(overrides.efficiency, system.efficiency);
   const coverage = Math.min(1, Math.max(0, num(overrides.coverage, hp.coverage * 100) / 100));
 
+  const poolSpaDefault = POOL_KWH[poolType] + SPA_KWH[spaType];
+  const poolSpaScale =
+    num(poolSpaKnown, 0) > 0 && poolSpaDefault > 0
+      ? num(poolSpaKnown, 0) / poolSpaDefault
+      : null;
+
   // Facture ($) → chaleur utile. Pour une maison électrique on passe par la
   // désagrégation tarif D ; pour un combustible, le montant se convertit en
   // litres ou en m³ au prix courant.
@@ -720,6 +767,16 @@ export default function Page() {
           occupants: Math.round(num(occupants, 3)),
           acType,
           degreeDays,
+          poolType,
+          spaType,
+          // Chiffre connu du client : on garde la forme saisonnière des
+          // valeurs par défaut et on l'ajuste au total qu'il nous donne.
+          ...(poolSpaScale === null
+            ? {}
+            : {
+                poolKwh: POOL_KWH[poolType] * poolSpaScale,
+                spaKwh: SPA_KWH[spaType] * poolSpaScale,
+              }),
         })
       : null;
 
@@ -1020,6 +1077,55 @@ export default function Page() {
                             )}
                           </select>
                         </div>
+                        <div className="field">
+                          <label>{t.poolLabel}</label>
+                          <select
+                            value={poolType}
+                            onChange={(e) =>
+                              setPoolType(e.target.value as PoolType)
+                            }
+                          >
+                            {(
+                              ["none", "pump", "heatPump", "electric"] as PoolType[]
+                            ).map((key) => (
+                              <option key={key} value={key}>
+                                {t.poolTypes[key]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>{t.spaLabel}</label>
+                          <select
+                            value={spaType}
+                            onChange={(e) =>
+                              setSpaType(e.target.value as SpaType)
+                            }
+                          >
+                            {(["none", "summer", "yearRound"] as SpaType[]).map(
+                              (key) => (
+                                <option key={key} value={key}>
+                                  {t.spaTypes[key]}
+                                </option>
+                              )
+                            )}
+                          </select>
+                        </div>
+                        {poolType !== "none" || spaType !== "none" ? (
+                          <div className="field full">
+                            <label>{t.poolSpaKnownLabel}</label>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              step={100}
+                              placeholder={numberFmt.format(poolSpaDefault)}
+                              value={poolSpaKnown}
+                              onChange={(e) => setPoolSpaKnown(e.target.value)}
+                            />
+                            <p className="field-hint">{t.poolSpaHint}</p>
+                          </div>
+                        ) : null}
                       </>
                     ) : null}
                     {breakdown ? (
@@ -1047,6 +1153,7 @@ export default function Page() {
                                   [
                                     ["heating", breakdown.heatingKwh],
                                     ["cooling", breakdown.coolingKwh],
+                                    ["poolspa", breakdown.poolSpaKwh],
                                     ["base", breakdown.baseKwh],
                                   ] as [string, number][]
                                 ).map(([key, value]) =>
@@ -1076,6 +1183,16 @@ export default function Page() {
                                     {t.breakdownCooling} —{" "}
                                     {numberFmt.format(
                                       Math.round(breakdown.coolingKwh)
+                                    )}{" "}
+                                    kWh
+                                  </li>
+                                ) : null}
+                                {breakdown.poolSpaKwh > 0 ? (
+                                  <li>
+                                    <span className="breakdown-dot poolspa" />
+                                    {t.breakdownPoolSpa} —{" "}
+                                    {numberFmt.format(
+                                      Math.round(breakdown.poolSpaKwh)
                                     )}{" "}
                                     kWh
                                   </li>
