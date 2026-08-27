@@ -1849,17 +1849,19 @@ function SavingsChart({
                 stroke="#fff"
                 strokeWidth={2}
               />
+              {/* Au pied du trait : le haut du graphique appartient aux
+                  étiquettes de courbes, qui sont larges. */}
               {compact ? null : (
                 <text
                   x={
-                    crossover.x > pad.left + plotW - 120
+                    crossover.x > pad.left + plotW * 0.75
                       ? crossover.x - 8
                       : crossover.x + 8
                   }
                   textAnchor={
-                    crossover.x > pad.left + plotW - 120 ? "end" : "start"
+                    crossover.x > pad.left + plotW * 0.75 ? "end" : "start"
                   }
-                  y={pad.top + 12}
+                  y={pad.top + plotH - 8}
                   fontSize={11}
                   fill="#0e2a43"
                   fontWeight={600}
