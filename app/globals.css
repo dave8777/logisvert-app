@@ -924,3 +924,5 @@ a:hover { text-decoration: underline; }
 }
 .savings-cta-actions .back-link { background: #fff; }
 .tier-savings { color: var(--navy); font-weight: 600; }
+.detect-notes { margin: 0.6rem 0 0 1.05rem; font-size: 0.86rem; color: var(--ink); }
+.detect-notes li { margin-bottom: 0.25rem; }

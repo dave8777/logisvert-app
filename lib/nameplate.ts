@@ -1,3 +1,5 @@
+import type { CurrentSystemKey } from "./savings";
+
 // Lecture de plaque signalétique — porté de app/sales/capacity.py de
 // l'application de vente DPSD. La capacité se décode surtout dans le NUMÉRO
 // DE MODÈLE (036 = 3 tonnes = 36 000 BTU, GWH12 = 12 000 BTU), avec les
@@ -11,7 +13,11 @@ export type NameplateReading = {
   tons: number | null;
   brand: string;
   modelGuess: string;
+  fuel: NameplateFuel; // ce que l'appareil brûle, quand la plaque le dit
+  isHeatPump: boolean; // renversable (chauffe), pas seulement climatiseur
 };
+
+export type NameplateFuel = "gas" | "propane" | "oil" | "electric" | "";
 
 const BRANDS = [
   "GREE", "LG", "FUJITSU", "MITSUBISHI", "DAIKIN", "SAMSUNG", "SENVILLE",
@@ -54,6 +60,51 @@ const KIND_MODEL_PREFIXES: [string, string[]][] = [
     "SEZ"]],
 ];
 
+// Ce que la plaque dit du combustible. Une fournaise ne se lit pas comme
+// « fournaise » tout court : c'est le combustible qui décide du coût de
+// chauffage, donc on le cherche explicitement.
+const FUEL_HINTS: [NameplateFuel, string[]][] = [
+  ["oil", ["OIL FIRED", "OIL-FIRED", "FUEL OIL", "MAZOUT", "HUILE",
+    "BECKETT", "RIELLO", "OIL BURNER", "NOZZLE", "GPH"]],
+  ["propane", ["PROPANE", "LP GAS", "L.P. GAS", "LPG", "LIQUID PROPANE"]],
+  ["gas", ["NATURAL GAS", "GAZ NATUREL", "NAT. GAS", "NAT GAS", "GAS INPUT",
+    "MANIFOLD PRESSURE", "GAZ NAT"]],
+  ["electric", ["ELECTRIC FURNACE", "FOURNAISE ELECTRIQUE",
+    "FOURNAISE ÉLECTRIQUE", "ELECTRIC HEATER", "HEATER KIT",
+    "ELECTRIC HEAT KIT", "PLINTHE", "BASEBOARD"]],
+];
+
+// Un appareil qui chauffe, pas seulement un climatiseur : mention explicite,
+// pièce propre au cycle inversé, ou préfixe de modèle « heat pump » des
+// grandes marques.
+const HEATPUMP_HINTS = [
+  "HEAT PUMP", "THERMOPOMPE", "REVERSING VALVE", "DEFROST",
+  "HSPF", "SOUPAPE D'INVERSION",
+];
+const HEATPUMP_PREFIXES = [
+  "GSZ", "ASZ", "DSZ", "SSZ", "4TWR", "4TWX", "2TWR", "25HPB", "25HCB",
+  "25HNB", "38MURA", "RP14", "RP15", "RP16", "XP13", "XP14", "XP16",
+  "14HPX", "16HPX", "GWH", "MUZ", "MXZ", "AOU", "LSU", "GUD",
+];
+const AC_ONLY_PREFIXES = [
+  "GSX", "ASX", "DSX", "SSX", "4TTR", "2TTR", "24ABB", "24ABC", "24ACB",
+  "24ACC", "24AAA", "RA13", "RA14", "RA16", "XR13", "XR14", "XR16",
+  "13AJN", "14AJM", "WCA3", "NXA4",
+];
+
+function detectFuel(text: string): NameplateFuel {
+  for (const [fuel, hints] of FUEL_HINTS) {
+    if (hints.some((h) => text.includes(h))) return fuel;
+  }
+  return "";
+}
+
+function detectHeatPump(text: string): boolean {
+  if (HEATPUMP_HINTS.some((h) => text.includes(h))) return true;
+  if (AC_ONLY_PREFIXES.some((p) => new RegExp("\\b" + p).test(text))) return false;
+  return HEATPUMP_PREFIXES.some((p) => new RegExp("\\b" + p).test(text));
+}
+
 const BTU_EXPLICIT = /\b(9|12|18|24|30|36|42|48|54|60)[,.\s]?000\s*BTU/gi;
 const BTU_BARE = /\b(9000|12000|18000|24000|30000|36000|42000|48000|54000|60000)\b/g;
 const TONS = /\b([1-5](?:[.,]5)?)[\s-]*TONS?\b/gi;
@@ -81,9 +132,14 @@ export function detectCapacity(ocrText: string): NameplateReading {
     tons: null,
     brand: "",
     modelGuess: "",
+    fuel: "",
+    isHeatPump: false,
   };
   if (!ocrText) return reading;
   const text = ocrText.toUpperCase();
+
+  reading.fuel = detectFuel(text);
+  reading.isHeatPump = detectHeatPump(text);
 
   for (const [kind, hints] of KIND_HINTS) {
     if (hints.some((h) => text.includes(h))) {
@@ -168,6 +224,35 @@ export function describeReading(r: NameplateReading, lang: string): string {
     );
   }
   return bits.join(" — ");
+}
+
+/**
+ * Ce que la plaque dit du chauffage ACTUEL du client, pour le calculateur
+ * d'économies. « low » = on propose quelque chose de plausible mais le
+ * client doit confirmer ; null = la plaque ne le dit pas du tout (une
+ * plaque de climatiseur central ne révèle pas ce qui chauffe la maison).
+ */
+export function suggestCurrentSystem(
+  r: NameplateReading
+): { key: CurrentSystemKey; confidence: "high" | "low" } | null {
+  if (r.fuel === "oil") return { key: "oil", confidence: "high" };
+  if (r.fuel === "propane") return { key: "propane", confidence: "high" };
+  if (r.fuel === "gas") return { key: "gas", confidence: "high" };
+  if (r.fuel === "electric") {
+    return {
+      key: r.kind === "furnace" || r.kind === "air_handler"
+        ? "electricFurnace"
+        : "baseboard",
+      confidence: "high",
+    };
+  }
+  if (r.isHeatPump) return { key: "oldHeatPump", confidence: "high" };
+  // Un ventilo-convecteur sans mention de combustible fonctionne presque
+  // toujours avec un élément électrique, ici comme ailleurs au Québec.
+  if (r.kind === "air_handler") {
+    return { key: "electricFurnace", confidence: "low" };
+  }
+  return null;
 }
 
 /** Pré-sélection du formulaire à partir de la lecture. */

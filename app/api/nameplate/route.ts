@@ -3,6 +3,7 @@ import {
   detectCapacity,
   describeReading,
   suggestSelection,
+  suggestCurrentSystem,
 } from "../../../lib/nameplate";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
@@ -59,5 +60,8 @@ export async function POST(request: Request) {
     reading,
     description: describeReading(reading, lang),
     suggestion: suggestSelection(reading),
+    // Pour le calculateur d'économies : ce que la plaque dit du chauffage
+    // actuel du client (null quand elle ne le dit pas).
+    currentSystem: suggestCurrentSystem(reading),
   });
 }

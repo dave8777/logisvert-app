@@ -245,6 +245,16 @@ export default function Page() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("lang") === "en") setLang("en");
+
+    // Retour du calculateur d'économies : on reprend le système et la
+    // capacité qu'il a déjà établis avec le client.
+    const type = params.get("systemType");
+    const size = params.get("sizeKey");
+    const nextType: SystemType | null =
+      type === "murale" || type === "centrale" ? type : null;
+    if (nextType) setSystemType(nextType);
+    const choices = nextType === "centrale" ? CENTRAL_TONS : WALL_SIZES;
+    if (size && (choices as readonly string[]).includes(size)) setSizeKey(size);
   }, []);
 
   const t = STRINGS[lang];

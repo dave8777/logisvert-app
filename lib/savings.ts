@@ -144,6 +144,17 @@ export const HEAT_INTENSITY: Record<Vintage, number> = {
   older: 15, // avant 1980
 };
 
+/**
+ * Superficie approximative déduite de la capacité de l'équipement existant
+ * (règle du pouce d'installation : ~550 pi² par tonne de refroidissement au
+ * Québec). Sert uniquement à préremplir le champ après lecture d'une plaque
+ * — le client ajuste ensuite.
+ */
+export function areaFromCapacity(sizeBtu: number): number {
+  const area = (sizeBtu / 12) * 550;
+  return Math.round(Math.min(4000, Math.max(600, area)) / 50) * 50;
+}
+
 export function demandFromArea(areaSqft: number, vintage: Vintage): number {
   return Math.max(0, areaSqft) * HEAT_INTENSITY[vintage];
 }

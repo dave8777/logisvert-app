@@ -5,6 +5,7 @@ import {
   CURRENT_SYSTEMS,
   FUELS,
   HEAT_PUMPS,
+  areaFromCapacity,
   backupModeFor,
   demandFromArea,
   demandFromConsumption,
@@ -47,6 +48,23 @@ const STRINGS = {
     subtitle:
       "Comparez ce que vous coûte votre chauffage actuel à ce qu'il vous coûterait avec une thermopompe Gree — année par année, jusqu'à 25 ans.",
     currentSection: "Votre chauffage actuel",
+    nameplateLabel: "Photo de la plaque signalétique (optionnel)",
+    nameplateHint:
+      "Photographiez l'étiquette de votre unité extérieure, de votre fournaise ou de votre ventilo-convecteur : on remplit le formulaire à partir de ce qu'elle dit. La plaque est l'étiquette (souvent métallique) portant le numéro de modèle.",
+    nameplateReading: "Lecture de votre plaque…",
+    nameplateUnreadable:
+      "On n'a pas pu lire cette plaque — remplissez les champs à la main, le calcul fonctionne pareil.",
+    detectedTitle: "Unité détectée sur votre photo :",
+    appliedCurrent: (name: string) => `Chauffage actuel réglé sur : ${name}.`,
+    appliedCurrentUnsure: (name: string) =>
+      `Chauffage actuel proposé : ${name} — confirmez-le ci-dessous.`,
+    appliedUnknown:
+      "Cette plaque est celle d'un appareil de climatisation : elle ne dit pas ce qui chauffe la maison. Choisissez votre chauffage actuel ci-dessous.",
+    appliedSystem: (name: string) =>
+      `Nouvelle thermopompe préréglée sur : ${name}.`,
+    appliedCapacity: (size: string) => `Capacité équivalente : ${size}.`,
+    appliedArea: (area: string) =>
+      `Superficie estimée à partir de la capacité : ${area} pi² — ajustez-la si vous la connaissez.`,
     currentLabel: "Système actuel",
     systems: {
       baseboard: "Plinthes électriques",
@@ -86,6 +104,8 @@ const STRINGS = {
       handler: "Système complet — ventilo-convecteur neuf",
       coil: "Serpentin sur fournaise existante",
     } as Record<HeatPumpKey, string>,
+    wallSize: (s: string) => `${s.replace("k", " 000")} BTU`,
+    centralSize: (t: string) => `${t} tonnes`,
     horizonLabel: "Projection sur",
     years: (n: number) => `${n} ans`,
     investSection: "Votre investissement (optionnel)",
@@ -172,6 +192,22 @@ const STRINGS = {
     subtitle:
       "Compare what your current heating costs you with what it would cost with a Gree heat pump — year by year, up to 25 years.",
     currentSection: "Your current heating",
+    nameplateLabel: "Nameplate photo (optional)",
+    nameplateHint:
+      "Photograph the label on your outdoor unit, furnace or air handler and we'll fill the form from what it says. The nameplate is the label (often metal) carrying the model number.",
+    nameplateReading: "Reading your nameplate…",
+    nameplateUnreadable:
+      "We couldn't read that nameplate — fill the fields in by hand, the calculation works just the same.",
+    detectedTitle: "Unit detected on your photo:",
+    appliedCurrent: (name: string) => `Current heating set to: ${name}.`,
+    appliedCurrentUnsure: (name: string) =>
+      `Current heating suggested: ${name} — please confirm below.`,
+    appliedUnknown:
+      "That nameplate belongs to a cooling unit: it doesn't say what heats the house. Pick your current heating below.",
+    appliedSystem: (name: string) => `New heat pump preset to: ${name}.`,
+    appliedCapacity: (size: string) => `Equivalent capacity: ${size}.`,
+    appliedArea: (area: string) =>
+      `Area estimated from the capacity: ${area} sq ft — adjust it if you know it.`,
     currentLabel: "Current system",
     systems: {
       baseboard: "Electric baseboards",
@@ -211,6 +247,8 @@ const STRINGS = {
       handler: "Complete system — new air handler",
       coil: "Cased coil on existing furnace",
     } as Record<HeatPumpKey, string>,
+    wallSize: (s: string) => `${s.replace("k", ",000")} BTU`,
+    centralSize: (t: string) => `${t} tons`,
     horizonLabel: "Project over",
     years: (n: number) => `${n} years`,
     investSection: "Your investment (optional)",
@@ -291,6 +329,33 @@ const STRINGS = {
   },
 } as const;
 
+// Réponse de /api/nameplate (déjà en place pour l'estimation en ligne).
+type NameplateResponse = {
+  ok?: boolean;
+  reading?: {
+    sizeBtu: number | null;
+    kind: string;
+    fuel: string;
+    isHeatPump: boolean;
+  } | null;
+  description?: string;
+  suggestion?: { systemType: SystemType; sizeKey: string } | null;
+  currentSystem?: {
+    key: CurrentSystemKey;
+    confidence: "high" | "low";
+  } | null;
+};
+
+type NameplateState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "unreadable" }
+  | { status: "done"; description: string; notes: string[] };
+
+// Les plaques qui viennent avec des conduits : la maison est déjà
+// distribuée, donc c'est une centrale qu'on lui propose.
+const DUCTED_KINDS = ["furnace", "coil", "air_handler", "central_ac"];
+
 type Overrides = {
   elecPrice: string;
   fuelPrice: string;
@@ -334,6 +399,10 @@ export default function Page() {
   const [investment, setInvestment] = useState("");
   const [subsidy, setSubsidy] = useState("");
   const [prefilled, setPrefilled] = useState(false);
+  const [newSizeKey, setNewSizeKey] = useState("");
+  const [nameplate, setNameplate] = useState<NameplateState>({ status: "idle" });
+  const [nameplatePhoto, setNameplatePhoto] = useState<File | null>(null);
+  const [areaTouched, setAreaTouched] = useState(false);
   const [overrides, setOverrides] = useState<Overrides>(() =>
     defaultsFor("baseboard", "clivia")
   );
@@ -360,11 +429,25 @@ export default function Page() {
       setInvestment(String(Math.round(Number(price))));
       setPrefilled(true);
     }
+    const size = params.get("sizeKey");
+    if (size) setNewSizeKey(size);
+
     const rebate = params.get("subsidy");
     if (rebate && Number.isFinite(Number(rebate))) {
       setSubsidy(String(Math.round(Number(rebate))));
     }
   }, []);
+
+  const [nameplatePreview, setNameplatePreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!nameplatePhoto) {
+      setNameplatePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(nameplatePhoto);
+    setNameplatePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [nameplatePhoto]);
 
   const t = STRINGS[lang];
   const system = CURRENT_SYSTEMS[currentKey];
@@ -395,6 +478,91 @@ export default function Page() {
     if (next === "en") url.searchParams.set("lang", "en");
     else url.searchParams.delete("lang");
     window.history.replaceState(null, "", url.toString());
+  }
+
+  // Lecture de la plaque par Workers AI — même route que l'estimation en
+  // ligne. Échec silencieux : le formulaire manuel reste la voie normale.
+  async function analyzeNameplate(file: File) {
+    setNameplate({ status: "loading" });
+    try {
+      const form = new FormData();
+      form.set("photo", file);
+      form.set("lang", lang);
+      const res = await fetch("/api/nameplate", { method: "POST", body: form });
+      const data = (await res.json()) as NameplateResponse;
+      if (data?.ok && data.reading && data.description) {
+        applyDetection(data, data.description);
+        return;
+      }
+    } catch {
+      // silencieux
+    }
+    setNameplate({ status: "unreadable" });
+  }
+
+  /**
+   * La plaque décide de trois choses : ce qui chauffe aujourd'hui, le type
+   * de système neuf (des conduits appellent une centrale) et, faute de
+   * mieux, la superficie déduite de la capacité. Tout reste modifiable.
+   */
+  function applyDetection(data: NameplateResponse, description: string) {
+    const reading = data.reading!;
+    const notes: string[] = [];
+
+    let nextCurrent = currentKey;
+    if (data.currentSystem?.key && CURRENT_SYSTEMS[data.currentSystem.key]) {
+      nextCurrent = data.currentSystem.key;
+      const name = STRINGS[lang].systems[nextCurrent];
+      notes.push(
+        data.currentSystem.confidence === "high"
+          ? t.appliedCurrent(name)
+          : t.appliedCurrentUnsure(name)
+      );
+    } else {
+      notes.push(t.appliedUnknown);
+    }
+
+    const ducted = DUCTED_KINDS.includes(reading.kind);
+    const nextType: SystemType = data.suggestion
+      ? data.suggestion.systemType
+      : ducted
+        ? "centrale"
+        : systemType;
+
+    let nextHp: HeatPumpKey;
+    if (nextType === "centrale") {
+      // Fournaise à combustible : le serpentin la garde en appoint plutôt
+      // que de la jeter — c'est la biénergie qu'on installe le plus.
+      const fossil = CURRENT_SYSTEMS[nextCurrent].fuel !== "electric";
+      nextHp = fossil && reading.kind === "furnace" ? "coil" : "handler";
+    } else {
+      nextHp = HP_BY_TYPE.murale.includes(hpKey) ? hpKey : "clivia";
+    }
+    notes.push(t.appliedSystem(STRINGS[lang].models[nextHp]));
+
+    const sizeKey = data.suggestion?.sizeKey ?? "";
+    if (sizeKey) {
+      notes.push(
+        t.appliedCapacity(
+          nextType === "murale" ? t.wallSize(sizeKey) : t.centralSize(sizeKey)
+        )
+      );
+    }
+
+    if (!areaTouched && reading.sizeBtu) {
+      const area = areaFromCapacity(reading.sizeBtu);
+      setAreaSqft(String(area));
+      setInputMode("area");
+      notes.push(t.appliedArea(numberFmt.format(area)));
+    }
+
+    setCurrentKey(nextCurrent);
+    setSystemType(nextType);
+    setHpKey(nextHp);
+    setNewSizeKey(sizeKey);
+    setConsumption(""); // l'unité du combustible vient peut-être de changer
+    setOverrides(defaultsFor(nextCurrent, nextHp));
+    setNameplate({ status: "done", description, notes });
   }
 
   function changeCurrent(next: CurrentSystemKey) {
@@ -462,6 +630,14 @@ export default function Page() {
   const unitLabel =
     fuel.unit === "kWh" ? "kWh" : fuel.unit === "L" ? "L" : "m³";
 
+  /** Retour vers l'estimation, avec ce que la plaque nous a appris. */
+  function estimateHref(): string {
+    const params = new URLSearchParams({ systemType });
+    if (newSizeKey) params.set("sizeKey", newSizeKey);
+    if (lang === "en") params.set("lang", "en");
+    return `/?${params.toString()}`;
+  }
+
   function formatPayback(value: number | null): string {
     if (value === null) return t.paybackNever;
     if (value <= 0) return t.paybackNow;
@@ -515,6 +691,49 @@ export default function Page() {
               </h3>
 
               <div className="form-grid">
+                <div className="field full photo-field">
+                  <label>{t.nameplateLabel}</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setNameplatePhoto(file);
+                      if (file) void analyzeNameplate(file);
+                      else setNameplate({ status: "idle" });
+                    }}
+                  />
+                  <p className="field-hint">{t.nameplateHint}</p>
+                  {nameplatePreview ? (
+                    <img className="photo-preview" src={nameplatePreview} alt="" />
+                  ) : null}
+                </div>
+
+                {nameplate.status === "loading" ? (
+                  <div className="full">
+                    <div className="status loading">{t.nameplateReading}</div>
+                  </div>
+                ) : null}
+                {nameplate.status === "unreadable" ? (
+                  <div className="full">
+                    <div className="status hint">{t.nameplateUnreadable}</div>
+                  </div>
+                ) : null}
+                {nameplate.status === "done" ? (
+                  <div className="full">
+                    <div className="detect-card">
+                      <div className="detect-title">{t.detectedTitle}</div>
+                      <div className="detect-desc">{nameplate.description}</div>
+                      <ul className="detect-notes">
+                        {nameplate.notes.map((note) => (
+                          <li key={note}>{note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="field full">
                   <label>{t.currentLabel}</label>
                   <select
@@ -563,7 +782,10 @@ export default function Page() {
                         min={200}
                         step={50}
                         value={areaSqft}
-                        onChange={(e) => setAreaSqft(e.target.value)}
+                        onChange={(e) => {
+                          setAreaSqft(e.target.value);
+                          setAreaTouched(true);
+                        }}
                       />
                     </div>
                     <div className="field">
@@ -943,10 +1165,7 @@ export default function Page() {
                     <p>{t.ctaText}</p>
                   </div>
                   <div className="savings-cta-actions">
-                    <a
-                      className="btn-primary"
-                      href={lang === "en" ? "/?lang=en" : "/"}
-                    >
+                    <a className="btn-primary" href={estimateHref()}>
                       {t.ctaEstimate}
                     </a>
                     <a className="back-link" href={`tel:${PHONE_TEL}`}>
