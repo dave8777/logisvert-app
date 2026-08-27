@@ -926,3 +926,51 @@ a:hover { text-decoration: underline; }
 .tier-savings { color: var(--navy); font-weight: 600; }
 .detect-notes { margin: 0.6rem 0 0 1.05rem; font-size: 0.86rem; color: var(--ink); }
 .detect-notes li { margin-bottom: 0.25rem; }
+
+/* Décomposition de la facture (mode « à partir de ma facture ») */
+.breakdown-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  padding: 1rem 1.1rem;
+}
+.breakdown-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.breakdown-total { margin-top: 0.35rem; font-size: 0.9rem; color: var(--ink); }
+.breakdown-warn { margin-top: 0.35rem; font-size: 0.88rem; color: #8a6516; }
+.breakdown-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.7rem 0 0.6rem;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.breakdown-seg + .breakdown-seg { box-shadow: inset 2px 0 0 #fff; }
+.breakdown-seg.heating, .breakdown-dot.heating { background: #e8762d; }
+.breakdown-seg.cooling, .breakdown-dot.cooling { background: #3ba7d9; }
+.breakdown-seg.base, .breakdown-dot.base { background: #9db0c0; }
+.breakdown-list { list-style: none; font-size: 0.85rem; color: var(--ink); }
+.breakdown-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.2rem;
+}
+.breakdown-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.breakdown-weather {
+  margin-top: 0.55rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}

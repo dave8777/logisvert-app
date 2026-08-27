@@ -5,20 +5,25 @@ import {
   CURRENT_SYSTEMS,
   FUELS,
   HEAT_PUMPS,
+  REALISM_FACTOR,
   areaFromCapacity,
   backupModeFor,
+  breakdownFromBill,
   demandFromArea,
   demandFromConsumption,
   project,
+  type AcType,
+  type BillBreakdown,
   type CurrentSystemKey,
   type HeatPumpKey,
   type Projection,
   type Vintage,
 } from "../../lib/savings";
+import { normalDegreeDays, type DegreeDays } from "../../lib/climate";
 
 type Lang = "fr" | "en";
 type SystemType = "murale" | "centrale";
-type InputMode = "area" | "consumption";
+type InputMode = "area" | "bill" | "consumption";
 
 const SITE_URL = "https://dpsdair.ca";
 const PHONE_DISPLAY = "(514) 969-8786";
@@ -38,6 +43,13 @@ const HP_BY_TYPE: Record<SystemType, HeatPumpKey[]> = {
 };
 
 const HORIZONS = [5, 10, 15, 20, 25];
+
+// Années de facturation proposées : l'an dernier d'abord, c'est la facture
+// que le client a sous la main.
+const BILL_YEARS = (() => {
+  const current = new Date().getFullYear();
+  return [current - 1, current - 2, current - 3, current];
+})();
 
 const STRINGS = {
   fr: {
@@ -76,7 +88,40 @@ const STRINGS = {
     } as Record<CurrentSystemKey, string>,
     modeLabel: "Comment estimer votre consommation?",
     modeArea: "À partir de ma maison",
+    modeBill: "À partir de ma facture",
     modeConsumption: "Je connais ma consommation",
+    billLabel: "Montant total payé à Hydro-Québec ($)",
+    billLabelFuel: (unit: string) => `Montant dépensé en combustible ($)`,
+    billYearLabel: "Pour l'année",
+    billHint:
+      "Le total de vos 12 factures. On en retire l'eau chaude, l'éclairage et les électros pour isoler ce que le chauffage vous coûte vraiment.",
+    billHintFuel:
+      "Ce que vous avez payé en combustible sur une saison complète.",
+    occupantsLabel: "Personnes dans la maison",
+    occupantsHint:
+      "Surtout pour l'eau chaude, le plus gros poste après le chauffage.",
+    acLabel: "Climatisation actuelle",
+    acTypes: {
+      none: "Aucune",
+      window: "Appareils de fenêtre",
+      central: "Climatisation centrale",
+    } as Record<AcType, string>,
+    breakdownTitle: "Ce que votre facture contient",
+    breakdownTotal: (kwh: string, rate: string) =>
+      `Environ ${kwh} kWh sur l'année, à ${rate} $/kWh tout compris.`,
+    breakdownHeating: "Chauffage",
+    breakdownCooling: "Climatisation",
+    breakdownBase: "Eau chaude, éclairage, électros",
+    breakdownWeatherCold: (pct: string, year: number) =>
+      `${year} a été ${pct} % plus froide que la normale : on ramène votre chauffage à une année ordinaire avant de projeter.`,
+    breakdownWeatherMild: (pct: string, year: number) =>
+      `${year} a été ${pct} % plus douce que la normale : on ramène votre chauffage à une année ordinaire avant de projeter.`,
+    breakdownWeatherNormal: (year: number) =>
+      `${year} a été proche des normales du secteur.`,
+    breakdownNormalsOnly:
+      "Calculé sur les normales climatiques du secteur (météo de l'année non disponible).",
+    breakdownBelowBase:
+      "Cette facture n'excède pas ce que consomment déjà l'eau chaude et les électros — vérifiez le montant et le nombre de personnes, ou passez par la superficie.",
     areaLabel: "Superficie chauffée (pi²)",
     vintageLabel: "Âge et isolation",
     vintages: {
@@ -132,6 +177,10 @@ const STRINGS = {
       "Une murale chauffe surtout l'aire ouverte ; le reste passe à l'appoint.",
     coverageHintCentral:
       "Distribué par les conduits, un système central couvre presque toute la maison.",
+    realism: "Facteur de réalisme",
+    realismHint:
+      "On rabote le COP pour les dégivrages, les cycles courts et le confort qu'on prend en plus une fois que chauffer coûte moins cher. 1,00 = conditions de laboratoire.",
+    effectiveCop: (value: string) => `COP effectif utilisé : ${value}.`,
     elecEsc: "Hausse annuelle de l'électricité (%)",
     fuelEsc: "Hausse annuelle du combustible (%)",
     resetAssumptions: "Rétablir les valeurs par défaut",
@@ -139,6 +188,8 @@ const STRINGS = {
     needInput:
       "Indiquez la superficie chauffée ou votre consommation annuelle pour voir la projection.",
     statYear1: "Économies la 1ʳᵉ année",
+    statShare: "Part de votre chauffage effacée",
+    statShareNote: "de ce que le chauffage vous coûte aujourd'hui",
     statTotal: (n: number) => `Économies sur ${n} ans`,
     statPayback: "Retour sur investissement",
     statCo2: (n: number) => `CO₂ évité sur ${n} ans`,
@@ -219,7 +270,39 @@ const STRINGS = {
     } as Record<CurrentSystemKey, string>,
     modeLabel: "How should we estimate your usage?",
     modeArea: "From my home",
+    modeBill: "From my bill",
     modeConsumption: "I know my usage",
+    billLabel: "Total paid to Hydro-Québec ($)",
+    billLabelFuel: (unit: string) => `Amount spent on fuel ($)`,
+    billYearLabel: "For the year",
+    billHint:
+      "The total of your 12 bills. We take out hot water, lighting and appliances to isolate what heating actually costs you.",
+    billHintFuel: "What you paid for fuel over a full season.",
+    occupantsLabel: "People in the home",
+    occupantsHint:
+      "Mostly for hot water, the largest item after heating.",
+    acLabel: "Current cooling",
+    acTypes: {
+      none: "None",
+      window: "Window units",
+      central: "Central air conditioning",
+    } as Record<AcType, string>,
+    breakdownTitle: "What your bill is made of",
+    breakdownTotal: (kwh: string, rate: string) =>
+      `About ${kwh} kWh over the year, at ${rate} $/kWh all in.`,
+    breakdownHeating: "Heating",
+    breakdownCooling: "Cooling",
+    breakdownBase: "Hot water, lighting, appliances",
+    breakdownWeatherCold: (pct: string, year: number) =>
+      `${year} was ${pct} % colder than normal, so we bring your heating back to an ordinary year before projecting.`,
+    breakdownWeatherMild: (pct: string, year: number) =>
+      `${year} was ${pct} % milder than normal, so we bring your heating back to an ordinary year before projecting.`,
+    breakdownWeatherNormal: (year: number) =>
+      `${year} came in close to the local normals.`,
+    breakdownNormalsOnly:
+      "Calculated on the area's climate normals (that year's weather wasn't available).",
+    breakdownBelowBase:
+      "This bill doesn't exceed what hot water and appliances already use — check the amount and the number of people, or switch to the area method.",
     areaLabel: "Heated area (sq ft)",
     vintageLabel: "Age and insulation",
     vintages: {
@@ -275,6 +358,10 @@ const STRINGS = {
       "A wall unit heats mostly the open area; the rest falls to backup heat.",
     coverageHintCentral:
       "Distributed through the ducts, a central system covers nearly the whole house.",
+    realism: "Realism factor",
+    realismHint:
+      "We shave the COP for defrost cycles, short-cycling and the extra comfort people take once heating costs less. 1.00 = laboratory conditions.",
+    effectiveCop: (value: string) => `Effective COP used: ${value}.`,
     elecEsc: "Annual electricity increase (%)",
     fuelEsc: "Annual fuel increase (%)",
     resetAssumptions: "Reset to defaults",
@@ -282,6 +369,8 @@ const STRINGS = {
     needInput:
       "Enter your heated area or your annual usage to see the projection.",
     statYear1: "First-year savings",
+    statShare: "Share of your heating removed",
+    statShareNote: "of what heating costs you today",
     statTotal: (n: number) => `Savings over ${n} years`,
     statPayback: "Payback period",
     statCo2: (n: number) => `CO₂ avoided over ${n} years`,
@@ -362,6 +451,7 @@ type Overrides = {
   efficiency: string;
   cop: string;
   coverage: string;
+  realism: string;
   elecEsc: string;
   fuelEsc: string;
 };
@@ -381,6 +471,7 @@ function defaultsFor(currentKey: CurrentSystemKey, hpKey: HeatPumpKey): Override
     efficiency: String(system.efficiency),
     cop: String(hp.cop),
     coverage: String(Math.round(hp.coverage * 100)),
+    realism: String(REALISM_FACTOR),
     elecEsc: String(FUELS.electric.defaultEscalation * 100),
     fuelEsc: String(fuel.defaultEscalation * 100),
   };
@@ -393,6 +484,13 @@ export default function Page() {
   const [areaSqft, setAreaSqft] = useState("1500");
   const [vintage, setVintage] = useState<Vintage>("average");
   const [consumption, setConsumption] = useState("");
+  const [billAmount, setBillAmount] = useState("");
+  const [billYear, setBillYear] = useState(BILL_YEARS[0]);
+  const [occupants, setOccupants] = useState("3");
+  const [acType, setAcType] = useState<AcType>("none");
+  const [degreeDays, setDegreeDays] = useState<DegreeDays>(() =>
+    normalDegreeDays()
+  );
   const [systemType, setSystemType] = useState<SystemType>("murale");
   const [hpKey, setHpKey] = useState<HeatPumpKey>("clivia");
   const [years, setYears] = useState(15);
@@ -449,6 +547,25 @@ export default function Page() {
     return () => URL.revokeObjectURL(url);
   }, [nameplatePhoto]);
 
+  // Météo réellement observée l'année facturée : sans elle, un hiver froid
+  // gonflerait les économies qu'on annonce. Indisponible = normales.
+  useEffect(() => {
+    if (inputMode !== "bill") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/degree-days?year=${billYear}`);
+        const data = (await res.json()) as { degreeDays?: DegreeDays };
+        if (!cancelled && data?.degreeDays) setDegreeDays(data.degreeDays);
+      } catch {
+        if (!cancelled) setDegreeDays(normalDegreeDays());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [inputMode, billYear]);
+
   const t = STRINGS[lang];
   const system = CURRENT_SYSTEMS[currentKey];
   const fuel = FUELS[system.fuel];
@@ -460,6 +577,14 @@ export default function Page() {
         style: "currency",
         currency: "CAD",
         maximumFractionDigits: 0,
+      }),
+    [lang]
+  );
+  const rateFmt = useMemo(
+    () =>
+      new Intl.NumberFormat(lang === "fr" ? "fr-CA" : "en-CA", {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3,
       }),
     [lang]
   );
@@ -585,10 +710,32 @@ export default function Page() {
   const efficiency = num(overrides.efficiency, system.efficiency);
   const coverage = Math.min(1, Math.max(0, num(overrides.coverage, hp.coverage * 100) / 100));
 
+  // Facture ($) → chaleur utile. Pour une maison électrique on passe par la
+  // désagrégation tarif D ; pour un combustible, le montant se convertit en
+  // litres ou en m³ au prix courant.
+  const breakdown: BillBreakdown | null =
+    inputMode === "bill" && system.fuel === "electric" && num(billAmount, 0) > 0
+      ? breakdownFromBill({
+          billAmount: num(billAmount, 0),
+          occupants: Math.round(num(occupants, 3)),
+          acType,
+          degreeDays,
+        })
+      : null;
+
+  const consumptionUnits =
+    inputMode === "consumption"
+      ? num(consumption, 0)
+      : inputMode === "bill" && system.fuel !== "electric"
+        ? num(billAmount, 0) / Math.max(0.01, num(overrides.fuelPrice, fuel.defaultPrice))
+        : breakdown
+          ? breakdown.heatingKwhNormalized
+          : 0;
+
   const demandKwh =
     inputMode === "area"
       ? demandFromArea(num(areaSqft, 0), vintage)
-      : demandFromConsumption(num(consumption, 0), fuel, efficiency, {
+      : demandFromConsumption(consumptionUnits, fuel, efficiency, {
           sharesCoverage: system.sharesCoverage,
           coverage,
         });
@@ -608,6 +755,7 @@ export default function Page() {
         num(overrides.elecEsc, FUELS.electric.defaultEscalation * 100) / 100,
       cop: num(overrides.cop, hp.cop),
       coverage,
+      realism: num(overrides.realism, REALISM_FACTOR),
       backup,
       years,
       investment: investment.trim() === "" ? null : num(investment, 0),
@@ -764,6 +912,13 @@ export default function Page() {
                     </button>
                     <button
                       type="button"
+                      className={`toggle-btn${inputMode === "bill" ? " active" : ""}`}
+                      onClick={() => setInputMode("bill")}
+                    >
+                      {t.modeBill}
+                    </button>
+                    <button
+                      type="button"
                       className={`toggle-btn${inputMode === "consumption" ? " active" : ""}`}
                       onClick={() => setInputMode("consumption")}
                     >
@@ -801,6 +956,165 @@ export default function Page() {
                         ))}
                       </select>
                     </div>
+                  </>
+                ) : inputMode === "bill" ? (
+                  <>
+                    <div className="field">
+                      <label>
+                        {system.fuel === "electric"
+                          ? t.billLabel
+                          : t.billLabelFuel(unitLabel)}
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step={50}
+                        value={billAmount}
+                        onChange={(e) => setBillAmount(e.target.value)}
+                      />
+                      <p className="field-hint">
+                        {system.fuel === "electric" ? t.billHint : t.billHintFuel}
+                      </p>
+                    </div>
+                    {system.fuel === "electric" ? (
+                      <>
+                        <div className="field">
+                          <label>{t.billYearLabel}</label>
+                          <select
+                            value={billYear}
+                            onChange={(e) => setBillYear(Number(e.target.value))}
+                          >
+                            {BILL_YEARS.map((y) => (
+                              <option key={y} value={y}>
+                                {y}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>{t.occupantsLabel}</label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={12}
+                            step={1}
+                            value={occupants}
+                            onChange={(e) => setOccupants(e.target.value)}
+                          />
+                          <p className="field-hint">{t.occupantsHint}</p>
+                        </div>
+                        <div className="field">
+                          <label>{t.acLabel}</label>
+                          <select
+                            value={acType}
+                            onChange={(e) => setAcType(e.target.value as AcType)}
+                          >
+                            {(["none", "window", "central"] as AcType[]).map(
+                              (key) => (
+                                <option key={key} value={key}>
+                                  {t.acTypes[key]}
+                                </option>
+                              )
+                            )}
+                          </select>
+                        </div>
+                      </>
+                    ) : null}
+                    {breakdown ? (
+                      <div className="full">
+                        <div className="breakdown-card">
+                          <div className="breakdown-title">
+                            {t.breakdownTitle}
+                          </div>
+                          {breakdown.belowBaseLoad ? (
+                            <p className="breakdown-warn">
+                              {t.breakdownBelowBase}
+                            </p>
+                          ) : (
+                            <>
+                              <p className="breakdown-total">
+                                {t.breakdownTotal(
+                                  numberFmt.format(
+                                    Math.round(breakdown.totalKwh)
+                                  ),
+                                  rateFmt.format(breakdown.effectiveRate)
+                                )}
+                              </p>
+                              <div className="breakdown-bar">
+                                {(
+                                  [
+                                    ["heating", breakdown.heatingKwh],
+                                    ["cooling", breakdown.coolingKwh],
+                                    ["base", breakdown.baseKwh],
+                                  ] as [string, number][]
+                                ).map(([key, value]) =>
+                                  value > 0 ? (
+                                    <span
+                                      key={key}
+                                      className={`breakdown-seg ${key}`}
+                                      style={{
+                                        width: `${(value / breakdown.totalKwh) * 100}%`,
+                                      }}
+                                    />
+                                  ) : null
+                                )}
+                              </div>
+                              <ul className="breakdown-list">
+                                <li>
+                                  <span className="breakdown-dot heating" />
+                                  {t.breakdownHeating} —{" "}
+                                  {numberFmt.format(
+                                    Math.round(breakdown.heatingKwh)
+                                  )}{" "}
+                                  kWh
+                                </li>
+                                {breakdown.coolingKwh > 0 ? (
+                                  <li>
+                                    <span className="breakdown-dot cooling" />
+                                    {t.breakdownCooling} —{" "}
+                                    {numberFmt.format(
+                                      Math.round(breakdown.coolingKwh)
+                                    )}{" "}
+                                    kWh
+                                  </li>
+                                ) : null}
+                                <li>
+                                  <span className="breakdown-dot base" />
+                                  {t.breakdownBase} —{" "}
+                                  {numberFmt.format(
+                                    Math.round(breakdown.baseKwh)
+                                  )}{" "}
+                                  kWh
+                                </li>
+                              </ul>
+                              <p className="breakdown-weather">
+                                {degreeDays.source === "normals"
+                                  ? t.breakdownNormalsOnly
+                                  : Math.abs(breakdown.weatherRatio - 1) < 0.02
+                                    ? t.breakdownWeatherNormal(billYear)
+                                    : breakdown.weatherRatio < 1
+                                      ? t.breakdownWeatherCold(
+                                          (
+                                            (1 / breakdown.weatherRatio - 1) *
+                                            100
+                                          ).toFixed(0),
+                                          billYear
+                                        )
+                                      : t.breakdownWeatherMild(
+                                          (
+                                            (breakdown.weatherRatio - 1) *
+                                            100
+                                          ).toFixed(0),
+                                          billYear
+                                        )}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <div className="field full">
@@ -981,6 +1295,28 @@ export default function Page() {
                     </p>
                   </div>
                   <div className="field">
+                    <label>{t.realism}</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step={0.01}
+                      min={0.5}
+                      max={1}
+                      value={overrides.realism}
+                      onChange={(e) =>
+                        setOverrides({ ...overrides, realism: e.target.value })
+                      }
+                    />
+                    <p className="field-hint">
+                      {t.realismHint}
+                      {projection
+                        ? ` ${t.effectiveCop(
+                            projection.effectiveCop.toFixed(2).replace(".", lang === "fr" ? "," : ".")
+                          )}`
+                        : ""}
+                    </p>
+                  </div>
+                  <div className="field">
                     <label>{t.elecEsc}</label>
                     <input
                       type="number"
@@ -1035,6 +1371,13 @@ export default function Page() {
                       {currency.format(Math.round(projection.firstYearSavings))}
                     </div>
                     <div className="stat-note">{t.perYear}</div>
+                  </div>
+                  <div className="stat-tile">
+                    <div className="stat-label">{t.statShare}</div>
+                    <div className="stat-value">
+                      {Math.round(projection.heatingBillReduction * 100)} %
+                    </div>
+                    <div className="stat-note">{t.statShareNote}</div>
                   </div>
                   <div className="stat-tile">
                     <div className="stat-label">{t.statTotal(years)}</div>

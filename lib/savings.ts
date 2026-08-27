@@ -18,6 +18,13 @@
 // par le client dans la page — ce sont des ordres de grandeur Québec 2026,
 // pas des garanties.
 
+import {
+  ANNUAL_CDD_NORMAL,
+  DAYS_IN_MONTH,
+  weatherRatio,
+  type DegreeDays,
+} from "./climate";
+
 export type FuelKey = "electric" | "oil" | "propane" | "gas";
 
 export type Fuel = {
@@ -116,8 +123,11 @@ export type HeatPumpKey = "charmo" | "clivia" | "airy" | "handler" | "coil";
 export type HeatPumpModel = {
   key: HeatPumpKey;
   systemType: "murale" | "centrale";
-  // COP saisonnier de chauffage en climat de Montréal (inverter froid
-  // extrême ; l'appoint des heures les plus froides est compté à part).
+  // COP saisonnier MESURÉ en climat froid, pas la fiche technique : les
+  // suivis de terrain sur thermopompes froid extrême donnent 2,2 à 2,7 sur
+  // une saison complète, loin des COP d'essai à 8 °C. On reste dans le bas
+  // de cette fourchette — une économie annoncée trop belle se retourne
+  // contre nous à la première facture.
   cop: number;
   // Part du besoin annuel portée par la thermopompe. Une murale chauffe
   // surtout l'aire ouverte ; un système central distribué par conduits
@@ -126,12 +136,20 @@ export type HeatPumpModel = {
 };
 
 export const HEAT_PUMPS: Record<HeatPumpKey, HeatPumpModel> = {
-  charmo: { key: "charmo", systemType: "murale", cop: 2.7, coverage: 0.65 },
-  clivia: { key: "clivia", systemType: "murale", cop: 2.8, coverage: 0.65 },
-  airy: { key: "airy", systemType: "murale", cop: 3.0, coverage: 0.65 },
-  handler: { key: "handler", systemType: "centrale", cop: 2.6, coverage: 0.9 },
-  coil: { key: "coil", systemType: "centrale", cop: 2.6, coverage: 0.85 },
+  charmo: { key: "charmo", systemType: "murale", cop: 2.4, coverage: 0.65 },
+  clivia: { key: "clivia", systemType: "murale", cop: 2.5, coverage: 0.65 },
+  airy: { key: "airy", systemType: "murale", cop: 2.6, coverage: 0.65 },
+  handler: { key: "handler", systemType: "centrale", cop: 2.4, coverage: 0.88 },
+  coil: { key: "coil", systemType: "centrale", cop: 2.4, coverage: 0.85 },
 };
+
+/**
+ * Ce que le catalogue ne dit pas : dégivrages, cycles courts en mi-saison,
+ * et le confort qu'on prend en plus une fois que chauffer coûte moins cher
+ * (on monte le thermostat, on chauffe des pièces qu'on laissait froides).
+ * On rabote le COP d'autant plutôt que de promettre le laboratoire.
+ */
+export const REALISM_FACTOR = 0.95;
 
 // Intensité de chauffage — kWh de chaleur utile par pi² par an, climat du
 // Grand Montréal (~4 200 degrés-jours). Ordres de grandeur usuels pour une
@@ -188,6 +206,145 @@ export function backupModeFor(
   return "current"; // biénergie : la fournaise existante prend les pointes
 }
 
+// ---- Facture d'électricité : remonter du montant à la consommation ----
+// Le client connaît son montant annuel, pas ses kWh. Le tarif D n'est pas
+// linéaire (redevance quotidienne + deux tranches), et le chauffage tombe
+// justement dans la tranche haute : on reconstitue donc la facture mois par
+// mois plutôt que de diviser par un tarif moyen.
+//
+// Valeurs approximatives 2026 — à confirmer sur une vraie facture.
+export const RATE_D = {
+  dailyCharge: 0.4562, // $ / jour (redevance d'abonnement)
+  tier1: 0.0694, // $ / kWh, premiers 40 kWh par jour
+  tier2: 0.107, // $ / kWh, au-delà
+  tier1DailyKwh: 40,
+};
+
+export type Tariff = typeof RATE_D;
+
+/** Facture annuelle produite par une répartition mensuelle de kWh. */
+export function rateDAnnualBill(
+  monthlyKwh: number[],
+  days: number[],
+  tariff: Tariff = RATE_D
+): number {
+  let total = 0;
+  for (let m = 0; m < 12; m += 1) {
+    const tier1Cap = tariff.tier1DailyKwh * days[m];
+    const kwh = Math.max(0, monthlyKwh[m]);
+    total +=
+      tariff.dailyCharge * days[m] +
+      Math.min(kwh, tier1Cap) * tariff.tier1 +
+      Math.max(0, kwh - tier1Cap) * tariff.tier2;
+  }
+  return total;
+}
+
+export type AcType = "none" | "window" | "central";
+
+// Consommation de base : ce qui ne dépend pas de la météo. L'eau chaude
+// domine et suit le nombre de personnes ; l'éclairage et les électros sont
+// à peu près fixes par ménage. Chauffe-eau électrique supposé — la norme
+// au Québec.
+export const BASE_KWH_HOUSEHOLD = 3500;
+export const BASE_KWH_PER_OCCUPANT = 1800;
+
+// Climatisation par saison normale, selon ce que le client possède.
+export const COOLING_KWH: Record<AcType, number> = {
+  none: 0,
+  window: 350,
+  central: 900,
+};
+
+export type BillBreakdown = {
+  totalKwh: number;
+  baseKwh: number;
+  coolingKwh: number;
+  heatingKwh: number; // électricité de chauffage de l'année facturée
+  heatingKwhNormalized: number; // ramenée à une année météo normale
+  weatherRatio: number; // > 1 = l'année facturée a été plus douce que la normale
+  effectiveRate: number; // $ / kWh réellement payés, toutes tranches comprises
+  belowBaseLoad: boolean; // la facture n'explique même pas la base : rien à chauffer
+};
+
+/**
+ * Facture annuelle ($) → part chauffage, climatisation et base, en tenant
+ * compte de la météo de l'année facturée.
+ */
+export function breakdownFromBill(input: {
+  billAmount: number;
+  occupants: number;
+  acType: AcType;
+  degreeDays: DegreeDays;
+  tariff?: Tariff;
+}): BillBreakdown {
+  const tariff = input.tariff ?? RATE_D;
+  const dd = input.degreeDays;
+  const days = DAYS_IN_MONTH;
+
+  const baseKwh =
+    BASE_KWH_HOUSEHOLD + BASE_KWH_PER_OCCUPANT * Math.max(1, input.occupants);
+  const coolingKwh =
+    COOLING_KWH[input.acType] *
+    (ANNUAL_CDD_NORMAL > 0 ? dd.annualCdd / ANNUAL_CDD_NORMAL : 1);
+
+  const hddTotal = dd.monthlyHdd.reduce((a, b) => a + b, 0) || 1;
+  const cddTotal = dd.monthlyCdd.reduce((a, b) => a + b, 0) || 1;
+  const daysTotal = days.reduce((a, b) => a + b, 0);
+
+  // Facture modélisée pour une quantité annuelle de chauffage donnée : la
+  // base s'étale sur l'année, le chauffage suit les degrés-jours, la
+  // climatisation suit les degrés-jours de refroidissement.
+  const billFor = (heatingKwh: number): number => {
+    const monthly = days.map(
+      (d, m) =>
+        (baseKwh * d) / daysTotal +
+        (heatingKwh * dd.monthlyHdd[m]) / hddTotal +
+        (coolingKwh * dd.monthlyCdd[m]) / cddTotal
+    );
+    return rateDAnnualBill(monthly, days, tariff);
+  };
+
+  const floor = billFor(0);
+  if (input.billAmount <= floor) {
+    // Facture plus basse que la consommation de base estimée : on ne peut
+    // pas en tirer de chauffage sans inventer.
+    return {
+      totalKwh: baseKwh + coolingKwh,
+      baseKwh,
+      coolingKwh,
+      heatingKwh: 0,
+      heatingKwhNormalized: 0,
+      weatherRatio: weatherRatio(dd),
+      effectiveRate: input.billAmount / Math.max(1, baseKwh + coolingKwh),
+      belowBaseLoad: true,
+    };
+  }
+
+  // La facture croît avec le chauffage : bissection, 40 passes suffisent
+  // largement pour tomber au kWh près.
+  let low = 0;
+  let high = 60000;
+  for (let i = 0; i < 40; i += 1) {
+    const mid = (low + high) / 2;
+    if (billFor(mid) < input.billAmount) low = mid;
+    else high = mid;
+  }
+  const heatingKwh = (low + high) / 2;
+  const totalKwh = baseKwh + coolingKwh + heatingKwh;
+
+  return {
+    totalKwh,
+    baseKwh,
+    coolingKwh,
+    heatingKwh,
+    heatingKwhNormalized: heatingKwh * weatherRatio(dd),
+    weatherRatio: weatherRatio(dd),
+    effectiveRate: input.billAmount / Math.max(1, totalKwh),
+    belowBaseLoad: false,
+  };
+}
+
 export type ProjectionInput = {
   demandKwh: number; // chaleur utile annuelle
   currentKey: CurrentSystemKey;
@@ -198,6 +355,7 @@ export type ProjectionInput = {
   electricEscalation: number;
   cop: number;
   coverage: number; // 0-1
+  realism: number; // rabot sur le COP (dégivrage, cycles, rebond de confort)
   backup: "electric" | "current";
   years: number;
   investment: number | null; // prix installé, taxes incluses
@@ -230,6 +388,8 @@ export type Projection = {
   backupUnitsPerYear: number; // combustible d'appoint conservé, s'il y a lieu
   co2SavedPerYear: number; // kg
   co2SavedTotal: number; // kg
+  effectiveCop: number; // COP après rabot de réalisme
+  heatingBillReduction: number; // part de la facture de chauffage effacée (0-1)
 };
 
 function escalated(price: number, rate: number, year: number): number {
@@ -240,7 +400,8 @@ export function project(input: ProjectionInput): Projection {
   const current = CURRENT_SYSTEMS[input.currentKey];
   const fuel = FUELS[current.fuel];
   const efficiency = Math.max(0.1, input.currentEfficiency);
-  const cop = Math.max(1, input.cop);
+  const realism = Math.min(1, Math.max(0.5, input.realism));
+  const cop = Math.max(1, input.cop * realism);
   const coverage = Math.min(1, Math.max(0, input.coverage));
   const years = Math.max(1, Math.round(input.years));
 
@@ -343,5 +504,8 @@ export function project(input: ProjectionInput): Projection {
     backupUnitsPerYear,
     co2SavedPerYear,
     co2SavedTotal: co2SavedPerYear * years,
+    effectiveCop: cop,
+    heatingBillReduction:
+      rows[0].currentCost > 0 ? rows[0].savings / rows[0].currentCost : 0,
   };
 }
