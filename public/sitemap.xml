@@ -4,4 +4,8 @@
     <loc>https://app.dpsdair.ca/</loc>
     <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://app.dpsdair.ca/economies</loc>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>

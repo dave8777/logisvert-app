@@ -112,6 +112,9 @@ const STRINGS = {
       "Après l'installation : dossier de fermeture complet (facture, photos, guide LogisVert) et garantie Gree enregistrée pour vous.",
     notOffered: "Non offert dans cette capacité",
     brochure: "Brochure (PDF)",
+    savingsLink: "Calculer mes économies →",
+    savingsNote:
+      "Curieux de savoir ce que vous économiseriez chaque année par rapport à votre chauffage actuel? Le calculateur reprend le prix de l'option choisie et vous donne le retour sur investissement.",
     emailedNote: "Une copie de vos estimations a été envoyée à votre courriel.",
     errorTitle: "L’envoi a échoué",
     optionNames: {
@@ -187,6 +190,9 @@ const STRINGS = {
       "After installation: complete close-out package (invoice, photos, LogisVert guide) and your Gree warranty registered for you.",
     notOffered: "Not offered in this capacity",
     brochure: "Brochure (PDF)",
+    savingsLink: "Calculer mes économies →",
+    savingsNote:
+      "Curieux de savoir ce que vous économiseriez chaque année par rapport à votre chauffage actuel? Le calculateur reprend le prix de l'option choisie et vous donne le retour sur investissement.",
     emailedNote: "A copy of your estimates has been sent to your email.",
     errorTitle: "The submission failed",
     optionNames: {
@@ -260,6 +266,23 @@ export default function Page() {
     if (next === "en") url.searchParams.set("lang", "en");
     else url.searchParams.delete("lang");
     window.history.replaceState(null, "", url.toString());
+  }
+
+  // Lien vers le calculateur d'économies : on passe le HAUT de la fourchette
+  // et la subvention, pour que le retour sur investissement affiché soit le
+  // scénario prudent.
+  function savingsHref(
+    key: string,
+    estimate: { max: number; subsidy: number | null }
+  ): string {
+    const params = new URLSearchParams({
+      option: key,
+      systemType,
+      price: String(estimate.max),
+      subsidy: String(estimate.subsidy ?? 0),
+    });
+    if (lang === "en") params.set("lang", "en");
+    return `/economies?${params.toString()}`;
   }
 
   const sizeChoices: readonly string[] =
@@ -737,6 +760,12 @@ export default function Page() {
                                       {t.brochure}
                                     </a>
                                   ) : null}
+                                  <a
+                                    className="tier-brochure tier-savings"
+                                    href={savingsHref(o.key, o.estimate)}
+                                  >
+                                    {t.savingsLink}
+                                  </a>
                                 </>
                               ) : (
                                 <div className="tier-none">{t.notOffered}</div>
@@ -756,6 +785,7 @@ export default function Page() {
                         </a>
                       ) : null}
                       <p className="results-note">{t.subsidyNote}</p>
+                      <p className="results-note">{t.savingsNote}</p>
                       {submit.emailSent ? (
                         <p className="results-note">{t.emailedNote}</p>
                       ) : null}
