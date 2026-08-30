@@ -244,6 +244,61 @@ export class WolseleyClient {
       message,
     };
   }
+
+  /**
+   * Lecture du panier. nopCommerce n'expose pas le panier en JSON : on lit
+   * la page. ⚠️ Analyse HTML = fragile, et c'est ce qui garde le verrou du
+   * total à l'étape de soumission — à vérifier en priorité contre le vrai
+   * site avant tout achat automatisé.
+   */
+  async readCart(): Promise<{ lignes: Array<{ nom: string; sousTotal: number }>; total: number }> {
+    const res = await this.fetch(ROUTES.cart, { headers: { accept: "text/html" } });
+    const html = await res.text();
+
+    const lignes: Array<{ nom: string; sousTotal: number }> = [];
+    for (const row of html.match(/<tr[^>]*class="[^"]*cart-item-row[^"]*"[\s\S]*?<\/tr>/g) ?? []) {
+      const nom = row.match(/class="product-name"[^>]*>([^<]+)</)?.[1]?.trim() ?? "";
+      const sousTotal = readMoney(row.match(/class="[^"]*subtotal[^"]*"[\s\S]*?([\d.,\s ]+)\s*\$/)?.[1] ?? "");
+      if (nom) lignes.push({ nom, sousTotal });
+    }
+
+    // Total commande : dernier montant de la table des totaux.
+    const total = readMoney(
+      html.match(/order-total[\s\S]{0,200}?([\d.,\s ]+)\s*\$/)?.[1] ?? ""
+    );
+
+    return { lignes, total };
+  }
+
+  /**
+   * Soumission finale. Volontairement dépourvue de garde-fous : ceux-ci
+   * vivent dans soumettreCommande() (wolseley-order.ts), qui est le SEUL
+   * point d'entrée à utiliser. Ne pas appeler cette méthode directement.
+   *
+   * En cas d'erreur réseau, NE JAMAIS relancer à l'aveugle : la commande
+   * est peut-être passée. Vérifier l'historique de commandes d'abord.
+   */
+  async submitOrder(route: string): Promise<{ success: boolean; message: string; orderNumber?: string }> {
+    const body = new URLSearchParams();
+    const token = await this.token(ROUTES.cart);
+    if (token) body.set(ANTIFORGERY_FIELD, token);
+
+    const res = await this.fetch(route, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body,
+    });
+
+    const data = (await res.json().catch(() => null)) as
+      | { success?: boolean; error?: string; redirect?: string }
+      | null;
+
+    return {
+      success: res.ok && data?.success === true,
+      message: data?.error ?? `HTTP ${res.status}`,
+      orderNumber: data?.redirect?.match(/orderId=(\d+)/)?.[1],
+    };
+  }
 }
 
 /**
@@ -270,4 +325,15 @@ export function readAvailability(text: string): {
     return { inStock: true, quantity: null };
   }
   return { inStock: null, quantity: null };
+}
+
+/** « 1 234,56 » ou « 1,234.56 » → nombre. Renvoie NaN si illisible. */
+function readMoney(raw: string): number {
+  const t = raw.replace(/[\s ]/g, "");
+  if (!t) return NaN;
+  // Le dernier séparateur est le décimal ; les autres sont des milliers.
+  const dernier = Math.max(t.lastIndexOf(","), t.lastIndexOf("."));
+  if (dernier === -1) return Number(t);
+  const entier = t.slice(0, dernier).replace(/[.,]/g, "");
+  return Number(`${entier}.${t.slice(dernier + 1)}`);
 }
