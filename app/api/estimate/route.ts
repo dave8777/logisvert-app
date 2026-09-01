@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { pushLeadToSales } from "../../../lib/salesApp";
+import { pingSalesImport } from "../../../lib/salesApp";
 import {
   buildQuote,
   type QuoteOption,
@@ -353,25 +353,11 @@ ${notes ? `<p>Client notes: ${notes}</p>` : ""}
     }
   );
 
-  // La demande tombe aussi directement dans les « Web leads » de l'app de
-  // vente — plus besoin de la repêcher dans les courriels. Best-effort.
-  await pushLeadToSales(env, {
-    name,
-    phone,
-    email,
-    address,
-    city,
-    postal,
-    notes: [
-      selectionLabel,
-      installationType,
-      detectedUnit ? `Unité existante (OCR): ${detectedUnit}` : "",
-      notes,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    source: "estimate-request",
-  });
+  // La demande remonte tout de suite dans les ESTIMATIONS VIRTUELLES de
+  // l'app de vente (avec photos et OCR), au lieu de n'exister que dans le
+  // courriel et le tableau de bord admin. Best-effort : une panne de l'app
+  // de vente ne bloque jamais un client.
+  await pingSalesImport(env);
 
   return Response.json({
     ok: true,

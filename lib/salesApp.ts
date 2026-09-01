@@ -44,6 +44,29 @@ export async function salesBusySlots(
   }
 }
 
+/**
+ * Réveille l'import de l'app de vente : elle vient alors chercher les
+ * nouveaux enregistrements (rendez-vous ET demandes d'estimation) via
+ * /api/admin/virtual-list, avec photos et OCR. Même appel que celui déjà
+ * fait après une réservation virtuelle.
+ *
+ * Best-effort : si l'app de vente dort, l'enregistrement reste dans R2 et
+ * le prochain import — automatique ou manuel — le récupérera.
+ */
+export async function pingSalesImport(env: SalesEnv): Promise<void> {
+  const { url, key } = salesConfig(env);
+  if (!url || !key) return;
+  try {
+    await fetch(`${url}/api/leads/sync-cloud`, {
+      method: "POST",
+      headers: { "x-lead-key": key },
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    // ignoré — l'enregistrement est stocké, l'import le rattrapera
+  }
+}
+
 export async function pushLeadToSales(
   env: SalesEnv,
   lead: {
