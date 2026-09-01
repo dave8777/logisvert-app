@@ -1,0 +1,50 @@
+# Déploiement automatique du site vers Cloudflare.
+#
+# Pousser du code ne publiait rien : il fallait lancer wrangler à la main
+# sur le poste Windows. GitHub, lui, peut joindre Cloudflare — ce workflow
+# fait donc le déploiement à notre place, à chaque fusion dans main.
+#
+# Réglage unique (voir le README) : ajouter le secret CLOUDFLARE_API_TOKEN
+# dans Settings → Secrets and variables → Actions du dépôt.
+# CLOUDFLARE_ACCOUNT_ID n'est nécessaire que si le compte Cloudflare en
+# contient plusieurs.
+#
+# Le déploiement est bloqué si le code ne compile pas : le site en ligne
+# n'est jamais remplacé par une version cassée.
+
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  # Bouton « Run workflow » dans l'onglet Actions, pour redéployer sans
+  # nouveau commit.
+  workflow_dispatch:
+
+# Un seul déploiement à la fois ; inutile d'en empiler.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy
