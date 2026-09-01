@@ -1,11 +1,12 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { bookingsKey, isBookableSlot } from "../../../lib/virtual";
+import { salesBusySlots } from "../../../lib/salesApp";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const MAX_EXTRA_PHOTOS = 5;
 
 const EMAIL_FROM = "Groupe DPSD <estimation@dpsdair.ca>";
-const OWNER_EMAIL = "renovationsdp@gmail.com";
+const OWNER_EMAIL = "dpsdair@gmail.com";
 const PHONE_DISPLAY = "(514) 969-8786";
 
 function sanitizeFileName(name: string): string {
@@ -161,6 +162,18 @@ export async function POST(request: Request) {
     return err(
       "Ce créneau vient d'être réservé — choisissez-en un autre.",
       "That time slot was just booked — please pick another.",
+      409
+    );
+  }
+
+  // Défense au moment d'écrire : si le calendrier de Matt (app de vente)
+  // montre ce créneau occupé, on refuse — même si la page listait encore
+  // le créneau (cache, onglet resté ouvert…).
+  const { busy: mattBusy } = await salesBusySlots(env);
+  if (mattBusy.has(`${slotDate} ${slotTime}`)) {
+    return err(
+      "Ce créneau vient de se remplir — choisissez-en un autre.",
+      "That time slot just filled up — please pick another.",
       409
     );
   }
