@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { pushLeadToSales } from "../../../lib/salesApp";
 import {
   buildQuote,
   type QuoteOption,
@@ -34,7 +35,7 @@ function sanitizeFileName(name: string): string {
 }
 
 const EMAIL_FROM = "Groupe DPSD <estimation@dpsdair.ca>";
-const OWNER_EMAIL = "renovationsdp@gmail.com";
+const OWNER_EMAIL = "dpsdair@gmail.com";
 const PHONE_DISPLAY = "(514) 969-8786";
 
 // Noms affichés des options, alignés sur l'application de vente.
@@ -351,6 +352,26 @@ ${notes ? `<p>Client notes: ${notes}</p>` : ""}
       httpMetadata: { contentType: "application/json" },
     }
   );
+
+  // La demande tombe aussi directement dans les « Web leads » de l'app de
+  // vente — plus besoin de la repêcher dans les courriels. Best-effort.
+  await pushLeadToSales(env, {
+    name,
+    phone,
+    email,
+    address,
+    city,
+    postal,
+    notes: [
+      selectionLabel,
+      installationType,
+      detectedUnit ? `Unité existante (OCR): ${detectedUnit}` : "",
+      notes,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    source: "estimate-request",
+  });
 
   return Response.json({
     ok: true,
