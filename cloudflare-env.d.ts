@@ -14,11 +14,15 @@ interface CloudflareEnv {
       value: ArrayBuffer | ReadableStream | string,
       options?: { httpMetadata?: { contentType?: string } }
     ): Promise<unknown>;
-    get(key: string): Promise<{
+    get(
+      key: string,
+      options?: { range?: { offset: number; length: number } }
+    ): Promise<{
       body: ReadableStream;
       httpMetadata?: { contentType?: string };
       text(): Promise<string>;
     } | null>;
+    head(key: string): Promise<{ size: number } | null>;
     list(options?: {
       prefix?: string;
       limit?: number;
